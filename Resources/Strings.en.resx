@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- Main Form -->
+  <data name="AppTitle" xml:space="preserve">
+    <value>MIDI Forwarder</value>
+  </data>
+  <data name="InputDeviceGroup" xml:space="preserve">
+    <value>MIDI Input Device</value>
+  </data>
+  <data name="OutputDeviceGroup" xml:space="preserve">
+    <value>MIDI Output Device</value>
+  </data>
+  <data name="SelectInputDevice" xml:space="preserve">
+    <value>Select Input Device:</value>
+  </data>
+  <data name="SelectOutputDevice" xml:space="preserve">
+    <value>Select Output Device:</value>
+  </data>
+  <data name="LogGroup" xml:space="preserve">
+    <value>MIDI Message Log</value>
+  </data>
+  <data name="AutoConnectOnStartup" xml:space="preserve">
+    <value>Auto-connect on startup</value>
+  </data>
+  <data name="StatusDisconnected" xml:space="preserve">
+    <value>Status: Disconnected</value>
+  </data>
+  <data name="StatusConnected" xml:space="preserve">
+    <value>Status: Connected</value>
+  </data>
+  <data name="ConnectButton" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="DisconnectButton" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="RefreshDevicesButton" xml:space="preserve">
+    <value>Refresh Device</value>
+  </data>
+  <!-- Tray Menu -->
+  <data name="TrayAutoStart" xml:space="preserve">
+    <value>Start with Windows</value>
+  </data>
+  <data name="TrayMinimizeToTray" xml:space="preserve">
+    <value>Minimize to Tray</value>
+  </data>
+  <data name="TrayLanguage" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="TrayLanguageChinese" xml:space="preserve">
+    <value>简体中文</value>
+  </data>
+  <data name="TrayLanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="TrayLanguageSystem" xml:space="preserve">
+    <value>System Default</value>
+  </data>
+  <data name="TrayAbout" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="TrayExit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="TrayTooltip" xml:space="preserve">
+    <value>MIDI Forwarder</value>
+  </data>
+  <data name="TrayBalloonTitle" xml:space="preserve">
+    <value>MIDI Forwarder</value>
+  </data>
+  <data name="TrayBalloonText" xml:space="preserve">
+    <value>Application minimized to tray</value>
+  </data>
+  <!-- About Dialog -->
+  <data name="AboutTitle" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="AboutVersionPrefix" xml:space="preserve">
+    <value>Version:</value>
+  </data>
+  <data name="AboutAuthor" xml:space="preserve">
+    <value>Author:</value>
+  </data>
+  <data name="AboutOkButton" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="AboutSoftwareName" xml:space="preserve">
+    <value>MIDI Forwarder</value>
+  </data>
+  <data name="AboutDescription" xml:space="preserve">
+    <value>A simple MIDI signal forwarding tool,
+used to forward MIDI input device signals to output devices.</value>
+  </data>
+  <!-- Messages -->
+  <data name="MsgConnected" xml:space="preserve">
+    <value>Device connected</value>
+  </data>
+  <data name="MsgDisconnected" xml:space="preserve">
+    <value>Device disconnected</value>
+  </data>
+  <data name="MsgDevicesRefreshed" xml:space="preserve">
+    <value>Device list refreshed</value>
+  </data>
+  <data name="MsgAutoStartEnabled" xml:space="preserve">
+    <value>Auto-start enabled</value>
+  </data>
+  <data name="MsgAutoStartDisabled" xml:space="preserve">
+    <value>Auto-start disabled</value>
+  </data>
+  <!-- Close Confirmation Dialog -->
+  <data name="CloseConfirmTitle" xml:space="preserve">
+    <value>Close Confirmation</value>
+  </data>
+  <data name="CloseConfirmMessage" xml:space="preserve">
+    <value>Click [Yes] to minimize to tray, click [No] to exit directly.
+
+You can change this setting via the tray menu.</value>
+  </data>
+  <!-- Log Messages -->
+  <data name="LogMessageFormat" xml:space="preserve">
+    <value>[{0:HH:mm:ss.fff}] {1} - Channel: {2}, Data1: {3}, Data2: {4}</value>
+  </data>
+</root>

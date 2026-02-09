@@ -1,0 +1,9 @@
+/.vs
+/.vscode
+/bin
+/ChineseSimplified.isl
+/Installer
+/obj
+/PrivacyPolicy.txt
+/PrivacyPolicy_en.txt
+/Setup.iss

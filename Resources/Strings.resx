@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- Main Form -->
+  <data name="AppTitle" xml:space="preserve">
+    <value>MIDI信号转发器</value>
+  </data>
+  <data name="InputDeviceGroup" xml:space="preserve">
+    <value>MIDI输入设备</value>
+  </data>
+  <data name="OutputDeviceGroup" xml:space="preserve">
+    <value>MIDI输出设备</value>
+  </data>
+  <data name="SelectInputDevice" xml:space="preserve">
+    <value>选择输入设备:</value>
+  </data>
+  <data name="SelectOutputDevice" xml:space="preserve">
+    <value>选择输出设备:</value>
+  </data>
+  <data name="LogGroup" xml:space="preserve">
+    <value>MIDI消息日志</value>
+  </data>
+  <data name="AutoConnectOnStartup" xml:space="preserve">
+    <value>启动时自动连接</value>
+  </data>
+  <data name="StatusDisconnected" xml:space="preserve">
+    <value>状态: 未连接</value>
+  </data>
+  <data name="StatusConnected" xml:space="preserve">
+    <value>状态: 已连接</value>
+  </data>
+  <data name="ConnectButton" xml:space="preserve">
+    <value>连接设备</value>
+  </data>
+  <data name="DisconnectButton" xml:space="preserve">
+    <value>断开连接</value>
+  </data>
+  <data name="RefreshDevicesButton" xml:space="preserve">
+    <value>刷新设备列表</value>
+  </data>
+  <!-- Tray Menu -->
+  <data name="TrayAutoStart" xml:space="preserve">
+    <value>开机自启动</value>
+  </data>
+  <data name="TrayMinimizeToTray" xml:space="preserve">
+    <value>最小化到托盘</value>
+  </data>
+  <data name="TrayLanguage" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="TrayLanguageChinese" xml:space="preserve">
+    <value>简体中文</value>
+  </data>
+  <data name="TrayLanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="TrayLanguageSystem" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="TrayAbout" xml:space="preserve">
+    <value>关于</value>
+  </data>
+  <data name="TrayExit" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="TrayTooltip" xml:space="preserve">
+    <value>MIDI信号转发器</value>
+  </data>
+  <data name="TrayBalloonTitle" xml:space="preserve">
+    <value>MIDI信号转发器</value>
+  </data>
+  <data name="TrayBalloonText" xml:space="preserve">
+    <value>程序已最小化到托盘</value>
+  </data>
+  <!-- About Dialog -->
+  <data name="AboutTitle" xml:space="preserve">
+    <value>关于</value>
+  </data>
+  <data name="AboutVersionPrefix" xml:space="preserve">
+    <value>版本:</value>
+  </data>
+  <data name="AboutAuthor" xml:space="preserve">
+    <value>作者:</value>
+  </data>
+  <data name="AboutOkButton" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="AboutSoftwareName" xml:space="preserve">
+    <value>MIDI信号转发器</value>
+  </data>
+  <data name="AboutDescription" xml:space="preserve">
+    <value>一个简单的MIDI信号转发工具，
+用于将MIDI输入设备信号转发到输出设备。</value>
+  </data>
+  <!-- Messages -->
+  <data name="MsgConnected" xml:space="preserve">
+    <value>已连接设备</value>
+  </data>
+  <data name="MsgDisconnected" xml:space="preserve">
+    <value>设备已断开连接</value>
+  </data>
+  <data name="MsgDevicesRefreshed" xml:space="preserve">
+    <value>设备列表已刷新</value>
+  </data>
+  <data name="MsgAutoStartEnabled" xml:space="preserve">
+    <value>开机自启动已启用</value>
+  </data>
+  <data name="MsgAutoStartDisabled" xml:space="preserve">
+    <value>开机自启动已禁用</value>
+  </data>
+  <!-- Close Confirmation Dialog -->
+  <data name="CloseConfirmTitle" xml:space="preserve">
+    <value>关闭确认</value>
+  </data>
+  <data name="CloseConfirmMessage" xml:space="preserve">
+    <value>点击【是】最小化到托盘，点击【否】直接退出程序。
+
+您可以通过托盘菜单更改此设置。</value>
+  </data>
+  <!-- Log Messages -->
+  <data name="LogMessageFormat" xml:space="preserve">
+    <value>[{0:HH:mm:ss.fff}] {1} - 通道: {2}, 数据1: {3}, 数据2: {4}</value>
+  </data>
+</root>
