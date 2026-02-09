@@ -5,10 +5,10 @@ namespace MidiForwarder
     internal static class Program
     {
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             ApplicationConfiguration.Initialize();
-            Application.Run(new MainForm());
+            Application.Run(new MainForm(args));
         }
     }
 
@@ -19,9 +19,13 @@ namespace MidiForwarder
         private TrayManager? trayManager;
         private MainFormLayout? layout;
         private bool isClosing = false;
+        private readonly bool isAutoStart;
 
-        public MainForm()
+        public MainForm(string[] args)
         {
+            // 检查是否是通过开机自启动启动的（通过命令行参数判断）
+            isAutoStart = args.Contains("--autostart");
+
             InitializeComponents();
             ApplyLanguageSetting();
             InitializeEventHandlers();
@@ -29,7 +33,8 @@ namespace MidiForwarder
 
             // 处理启动时最小化到托盘
             // 只有在开机自启动且启用了最小化到托盘时才隐藏窗口
-            if (configManager?.Config.MinimizeToTray == true &&
+            if (isAutoStart &&
+                configManager?.Config.MinimizeToTray == true &&
                 configManager.Config.AutoStart &&
                 TrayManager.IsAutoStartEnabled)
             {

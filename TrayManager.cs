@@ -186,7 +186,8 @@ namespace MidiForwarder
                     if (enable)
                     {
                         var exePath = Application.ExecutablePath;
-                        key.SetValue("MidiForwarder", exePath);
+                        // 添加 --autostart 参数，用于区分开机自启动和手动启动
+                        key.SetValue("MidiForwarder", $"\"{exePath}\" --autostart");
                     }
                     else
                     {
