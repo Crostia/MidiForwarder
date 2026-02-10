@@ -1,0 +1,44 @@
+MidiForwarder Privacy Policy
+
+Last Updated: February 2026
+
+1. Overview
+   MidiForwarder (hereinafter referred to as "this software") respects and protects the privacy of all users.
+
+2. Information Collection
+   2.1 This software only processes MIDI data locally on your computer
+   2.2 This software does not collect, transmit, or store any personal information
+   2.3 This software does not collect any usage data or telemetry information
+
+3. Local Data Storage
+   3.1 Software configuration information is stored only on your local computer
+   3.2 All MIDI data is processed locally and will not be uploaded to any server
+   3.3 Users can delete local configuration files at any time
+
+4. Network Communication
+   4.1 This software does not perform any network communication
+   4.2 This software does not require an internet connection to operate
+   4.3 This software does not connect to any remote servers
+
+5. Third Party Access
+   5.1 We do not share user data with any third parties
+   5.2 This software does not contain any third-party tracking code
+   5.3 This software does not use any third-party analytics services
+
+6. Data Security
+   6.1 Since all data is processed locally, data security is controlled by the user
+   6.2 Users are advised to maintain proper computer security
+
+7. User Rights
+   Users have the right to:
+   - Stop using this software at any time
+   - Delete all locally stored configuration data
+   - Understand how this software processes data
+
+8. Policy Updates
+   We may update this privacy policy from time to time. The updated policy will be displayed in the software.
+
+9. Contact Us
+   If you have any privacy-related questions, please contact us through the About dialog in the software.
+
+By continuing to use this software, you agree to the above privacy terms.

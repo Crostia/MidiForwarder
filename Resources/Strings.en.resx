@@ -178,4 +178,46 @@ You can change this setting via the tray menu.</value>
   <data name="LogMessageFormat" xml:space="preserve">
     <value>[{0:HH:mm:ss.fff}] {1} - Channel: {2}, Data1: {3}, Data2: {4}</value>
   </data>
+  <!-- Update Check -->
+  <data name="TrayAutoCheckUpdate" xml:space="preserve">
+    <value>Auto Check for Updates</value>
+  </data>
+  <data name="TrayCheckUpdate" xml:space="preserve">
+    <value>Check for Updates</value>
+  </data>
+  <data name="UpdateCheckTitle" xml:space="preserve">
+    <value>Check for Updates</value>
+  </data>
+  <data name="UpdateCheckErrorTitle" xml:space="preserve">
+    <value>Update Check Failed</value>
+  </data>
+  <data name="UpdateAvailableTitle" xml:space="preserve">
+    <value>New Version Available</value>
+  </data>
+  <data name="UpdateAvailableMessage" xml:space="preserve">
+    <value>New version available!
+
+Current Version: {0}
+Latest Version: {1}
+
+Go to download page?</value>
+  </data>
+  <data name="UpdateReleaseNotes" xml:space="preserve">
+    <value>Release Notes:</value>
+  </data>
+  <data name="UpdateNoUpdateMessage" xml:space="preserve">
+    <value>You are running the latest version.</value>
+  </data>
+  <data name="UpdateCheckError" xml:space="preserve">
+    <value>Error checking for updates</value>
+  </data>
+  <data name="MsgCheckingForUpdates" xml:space="preserve">
+    <value>Checking for updates...</value>
+  </data>
+  <data name="MsgAutoCheckUpdateEnabled" xml:space="preserve">
+    <value>Auto check for updates enabled</value>
+  </data>
+  <data name="MsgAutoCheckUpdateDisabled" xml:space="preserve">
+    <value>Auto check for updates disabled</value>
+  </data>
 </root>

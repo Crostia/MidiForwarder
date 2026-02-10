@@ -18,6 +18,7 @@ namespace MidiForwarder
         private MidiManager? midiManager;
         private TrayManager? trayManager;
         private MainFormLayout? layout;
+        private UpdateManager? updateManager;
         private bool isClosing = false;
         private readonly bool isAutoStart;
 
@@ -29,7 +30,7 @@ namespace MidiForwarder
             InitializeComponents();
             ApplyLanguageSetting();
             InitializeEventHandlers();
-            RefreshDeviceLists();
+            var (inputDevices, outputDevices) = RefreshDeviceLists();
 
             // 处理启动时最小化到托盘
             // 只有在开机自启动且启用了最小化到托盘时才隐藏窗口
@@ -48,8 +49,100 @@ namespace MidiForwarder
                 configManager.Config.SelectedInputDeviceId >= 0 &&
                 configManager.Config.SelectedOutputDeviceId >= 0)
             {
-                SelectDevicesById(configManager.Config.SelectedInputDeviceId, configManager.Config.SelectedOutputDeviceId);
+                SelectDevicesById(configManager.Config.SelectedInputDeviceId, configManager.Config.SelectedOutputDeviceId, inputDevices, outputDevices);
                 ConnectDevices();
+            }
+
+            // 启动时检查更新（如果不是开机自启动，或者距离上次检查已经超过1天）
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2000); // 延迟2秒，等待窗口加载完成
+                await CheckForUpdateOnStartupAsync();
+            });
+        }
+
+        private async Task CheckForUpdateOnStartupAsync()
+        {
+            if (configManager?.Config.AutoCheckUpdate != true) return;
+
+            // 检查是否已经检查过更新（每天最多检查一次）
+            var lastCheck = configManager.Config.LastUpdateCheck;
+            if (DateTime.Now - lastCheck < TimeSpan.FromDays(1)) return;
+
+            await PerformUpdateCheckAsync(true);
+        }
+
+        private async Task PerformUpdateCheckAsync(bool isSilent = false)
+        {
+            if (updateManager == null) return;
+
+            try
+            {
+                var result = await updateManager.CheckForUpdateAsync();
+
+                // 更新上次检查时间
+                configManager?.UpdateLastUpdateCheck(DateTime.Now);
+
+                if (result.IsError)
+                {
+                    if (!isSilent)
+                    {
+                        this.Invoke(() =>
+                        {
+                            MessageBox.Show(result.ErrorMessage, LocalizationManager.GetString("UpdateCheckErrorTitle"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        });
+                    }
+                    return;
+                }
+
+                if (result.HasUpdate)
+                {
+                    this.Invoke(() =>
+                    {
+                        ShowUpdateDialog(result);
+                    });
+                }
+                else if (!isSilent)
+                {
+                    this.Invoke(() =>
+                    {
+                        MessageBox.Show(LocalizationManager.GetString("UpdateNoUpdateMessage"),
+                            LocalizationManager.GetString("UpdateCheckTitle"),
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!isSilent)
+                {
+                    this.Invoke(() =>
+                    {
+                        MessageBox.Show($"{LocalizationManager.GetString("UpdateCheckError")}: {ex.Message}",
+                            LocalizationManager.GetString("UpdateCheckErrorTitle"),
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    });
+                }
+            }
+        }
+
+        private void ShowUpdateDialog(UpdateCheckResult result)
+        {
+            var message = string.Format(LocalizationManager.GetString("UpdateAvailableMessage"),
+                result.CurrentVersion, result.LatestVersion);
+
+            if (!string.IsNullOrEmpty(result.ReleaseNotes))
+            {
+                message += "\n\n" + LocalizationManager.GetString("UpdateReleaseNotes") + "\n" + result.ReleaseNotes;
+            }
+
+            var dialogResult = MessageBox.Show(message, LocalizationManager.GetString("UpdateAvailableTitle"),
+                MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+
+            if (dialogResult == DialogResult.Yes)
+            {
+                updateManager?.OpenReleasePage(result.DownloadUrl);
             }
         }
 
@@ -59,7 +152,8 @@ namespace MidiForwarder
             configManager = new ConfigManager();
             midiManager = new MidiManager();
             layout = new MainFormLayout(this);
-            trayManager = new TrayManager(configManager!.Config.MinimizeToTray, configManager.Config.Language);
+            trayManager = new TrayManager(configManager!.Config.MinimizeToTray, configManager.Config.Language, configManager.Config.AutoCheckUpdate);
+            updateManager = new UpdateManager();
 
             // 设置自动连接复选框状态
             layout!.AutoConnectCheckBox.Checked = configManager!.Config.AutoConnectOnStartup;
@@ -139,6 +233,18 @@ namespace MidiForwarder
                 trayManager?.UpdateLanguage(language);
             };
             trayManager.ExitRequested += (s, e) => ExitApplication();
+
+            // 更新检查事件
+            trayManager.CheckUpdateRequested += async (s, e) =>
+            {
+                layout!.LogMessage(LocalizationManager.GetString("MsgCheckingForUpdates"));
+                await PerformUpdateCheckAsync(false);
+            };
+            trayManager.AutoCheckUpdateChanged += (s, e) =>
+            {
+                configManager?.UpdateAutoCheckUpdate(e);
+                layout.LogMessage(e ? LocalizationManager.GetString("MsgAutoCheckUpdateEnabled") : LocalizationManager.GetString("MsgAutoCheckUpdateDisabled"));
+            };
         }
 
         private void OnConnectButtonClick()
@@ -178,7 +284,7 @@ namespace MidiForwarder
             midiManager?.Disconnect();
         }
 
-        private void RefreshDeviceLists()
+        private (List<MidiDeviceInfo> inputDevices, List<MidiDeviceInfo> outputDevices) RefreshDeviceLists()
         {
             layout!.InputComboBox.Items.Clear();
             layout.OutputComboBox.Items.Clear();
@@ -201,15 +307,23 @@ namespace MidiForwarder
 
             if (layout.OutputComboBox.Items.Count > 0)
                 layout.OutputComboBox.SelectedIndex = 0;
+
+            return (inputDevices, outputDevices);
         }
 
-        private void SelectDevicesById(int inputId, int outputId)
+        private void SelectDevicesById(int inputId, int outputId, List<MidiDeviceInfo> inputDevices, List<MidiDeviceInfo> outputDevices)
         {
-            if (inputId < layout!.InputComboBox.Items.Count)
-                layout.InputComboBox.SelectedIndex = inputId;
+            // 根据设备 ID 找到对应的下拉框索引
+            var inputIndex = inputDevices.FindIndex(d => d.Id == inputId);
+            var outputIndex = outputDevices.FindIndex(d => d.Id == outputId);
 
-            if (outputId < layout.OutputComboBox.Items.Count)
-                layout.OutputComboBox.SelectedIndex = outputId;
+            if (layout == null) return;
+
+            if (inputIndex >= 0 && inputIndex < layout.InputComboBox.Items.Count)
+                layout.InputComboBox.SelectedIndex = inputIndex;
+
+            if (outputIndex >= 0 && outputIndex < layout.OutputComboBox.Items.Count)
+                layout.OutputComboBox.SelectedIndex = outputIndex;
         }
 
         private void UpdateConnectButtonState()
@@ -277,12 +391,14 @@ namespace MidiForwarder
                     // 直接退出
                     midiManager?.Dispose();
                     trayManager?.Dispose();
+                    updateManager?.Dispose();
                 }
             }
             else
             {
                 midiManager?.Dispose();
                 trayManager?.Dispose();
+                updateManager?.Dispose();
             }
         }
 

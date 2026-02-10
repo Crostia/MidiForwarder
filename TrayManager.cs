@@ -15,12 +15,16 @@ namespace MidiForwarder
         private ToolStripMenuItem? langChineseItem;
         private ToolStripMenuItem? langEnglishItem;
         private ToolStripMenuItem? langSystemItem;
+        private ToolStripMenuItem? checkUpdateItem;
+        private ToolStripMenuItem? autoCheckUpdateItem;
 
         public event EventHandler? ShowWindowRequested;
         public event EventHandler<bool>? AutoStartChanged;
         public event EventHandler<bool>? MinimizeToTrayChanged;
         public event EventHandler? ExitRequested;
         public event EventHandler<string>? LanguageChanged;
+        public event EventHandler? CheckUpdateRequested;
+        public event EventHandler<bool>? AutoCheckUpdateChanged;
 
         private string currentLanguage = "";
 
@@ -43,14 +47,14 @@ namespace MidiForwarder
             }
         }
 
-        public TrayManager(bool minimizeToTray, string language)
+        public TrayManager(bool minimizeToTray, string language, bool autoCheckUpdate = true)
         {
             currentLanguage = language;
-            InitializeTrayIcon(minimizeToTray);
+            InitializeTrayIcon(minimizeToTray, autoCheckUpdate);
             LocalizationManager.LanguageChanged += (s, e) => UpdateLocalizedText();
         }
 
-        private void InitializeTrayIcon(bool minimizeToTray)
+        private void InitializeTrayIcon(bool minimizeToTray, bool autoCheckUpdate)
         {
             trayMenu = new ContextMenuStrip();
 
@@ -76,6 +80,13 @@ namespace MidiForwarder
 
             UpdateLanguageMenuCheck();
 
+            // 更新相关菜单项
+            autoCheckUpdateItem = new ToolStripMenuItem(LocalizationManager.GetString("TrayAutoCheckUpdate"), null, (s, e) => ToggleAutoCheckUpdate())
+            {
+                Checked = autoCheckUpdate
+            };
+            checkUpdateItem = new ToolStripMenuItem(LocalizationManager.GetString("TrayCheckUpdate"), null, (s, e) => CheckUpdateRequested?.Invoke(this, EventArgs.Empty));
+
             var separator1 = new ToolStripSeparator();
             aboutItem = new ToolStripMenuItem(LocalizationManager.GetString("TrayAbout"), null, (s, e) => AboutDialog.Instance.Show());
             var separator2 = new ToolStripSeparator();
@@ -84,6 +95,8 @@ namespace MidiForwarder
             trayMenu.Items.Add(autoStartItem);
             trayMenu.Items.Add(minimizeToTrayItem);
             trayMenu.Items.Add(languageItem);
+            trayMenu.Items.Add(autoCheckUpdateItem);
+            trayMenu.Items.Add(checkUpdateItem);
             trayMenu.Items.Add(separator1);
             trayMenu.Items.Add(aboutItem);
             trayMenu.Items.Add(separator2);
@@ -114,6 +127,10 @@ namespace MidiForwarder
                 langEnglishItem.Text = LocalizationManager.GetString("TrayLanguageEnglish");
             if (langSystemItem != null)
                 langSystemItem.Text = LocalizationManager.GetString("TrayLanguageSystem");
+            if (autoCheckUpdateItem != null)
+                autoCheckUpdateItem.Text = LocalizationManager.GetString("TrayAutoCheckUpdate");
+            if (checkUpdateItem != null)
+                checkUpdateItem.Text = LocalizationManager.GetString("TrayCheckUpdate");
             if (aboutItem != null)
                 aboutItem.Text = LocalizationManager.GetString("TrayAbout");
             if (exitItem != null)
@@ -172,6 +189,23 @@ namespace MidiForwarder
             {
                 minimizeToTrayItem.Checked = !minimizeToTrayItem.Checked;
                 MinimizeToTrayChanged?.Invoke(this, minimizeToTrayItem.Checked);
+            }
+        }
+
+        private void ToggleAutoCheckUpdate()
+        {
+            if (autoCheckUpdateItem != null)
+            {
+                autoCheckUpdateItem.Checked = !autoCheckUpdateItem.Checked;
+                AutoCheckUpdateChanged?.Invoke(this, autoCheckUpdateItem.Checked);
+            }
+        }
+
+        public void UpdateAutoCheckUpdateCheck(bool autoCheckUpdate)
+        {
+            if (autoCheckUpdateItem != null)
+            {
+                autoCheckUpdateItem.Checked = autoCheckUpdate;
             }
         }
 

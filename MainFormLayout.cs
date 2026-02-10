@@ -36,9 +36,10 @@ namespace MidiForwarder
         {
             form.Text = LocalizationManager.GetString("AppTitle");
             form.Size = new Size(600, 400);
-            form.FormBorderStyle = FormBorderStyle.Fixed3D;
+            form.FormBorderStyle = FormBorderStyle.FixedDialog;
             form.StartPosition = FormStartPosition.CenterScreen;
             form.MaximizeBox = false;
+            form.MinimizeBox = false;
 
             // 输入设备区域
             inputGroupBox = new GroupBox

@@ -90,5 +90,17 @@ namespace MidiForwarder
             config.Language = language;
             SaveConfig();
         }
+
+        public void UpdateAutoCheckUpdate(bool autoCheck)
+        {
+            config.AutoCheckUpdate = autoCheck;
+            SaveConfig();
+        }
+
+        public void UpdateLastUpdateCheck(DateTime checkTime)
+        {
+            config.LastUpdateCheck = checkTime;
+            SaveConfig();
+        }
     }
 }
