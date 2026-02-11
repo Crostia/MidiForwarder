@@ -22,8 +22,22 @@ namespace MidiForwarder
 
         // 软件信息配置 - 可以在这里修改
         public string SoftwareName { get; set; } = LocalizationManager.GetString("AboutSoftwareName");
-        public string Version { get; set; } = "1.0.0";
+        public string Version { get; set; } = GetAssemblyVersion();
         public string Author { get; set; } = "Crostia";
+
+        private static string GetAssemblyVersion()
+        {
+            try
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                var version = assembly.GetName().Version;
+                return version?.ToString(3) ?? "1.0.0";
+            }
+            catch
+            {
+                return "1.0.0";
+            }
+        }
         public string? AuthorUrl { get; set; } = "https://github.com/Crostia";
         public string Description { get; set; } = LocalizationManager.GetString("AboutDescription");
         public string? Copyright { get; set; } = null;
@@ -82,7 +96,7 @@ namespace MidiForwarder
 
             aboutForm.FormClosed += (s, e) =>
             {
-                aboutForm?.Dispose();
+                // 只清理引用，不调用 Dispose，因为窗体已经关闭
                 aboutForm = null;
                 titleLabel = null;
                 versionPrefixLabel = null;
@@ -305,7 +319,15 @@ namespace MidiForwarder
         public void Dispose()
         {
             LocalizationManager.LanguageChanged -= OnLanguageChanged;
-            aboutForm?.Dispose();
+            if (aboutForm != null && !aboutForm.IsDisposed)
+            {
+                aboutForm.Dispose();
+            }
+            aboutForm = null;
+            lock (_lock)
+            {
+                _instance = null;
+            }
             GC.SuppressFinalize(this);
         }
     }

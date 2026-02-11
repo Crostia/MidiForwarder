@@ -6,7 +6,11 @@ namespace MidiForwarder
     {
         private readonly string configFilePath;
         private AppConfig config = new();
-        private static readonly JsonSerializerOptions jsonOptions = new() { WriteIndented = true };
+        private static readonly JsonSerializerOptions jsonOptions = new()
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true
+        };
 
         public AppConfig Config => config ?? new AppConfig();
 

@@ -14,7 +14,7 @@ namespace MidiForwarder
 
     public partial class MainForm : Form
     {
-        private ConfigManager? configManager;
+        private readonly ConfigManager? configManager;
         private MidiManager? midiManager;
         private TrayManager? trayManager;
         private MainFormLayout? layout;
@@ -27,8 +27,11 @@ namespace MidiForwarder
             // 检查是否是通过开机自启动启动的（通过命令行参数判断）
             isAutoStart = args.Contains("--autostart");
 
-            InitializeComponents();
+            // 先加载配置并应用语言设置，再初始化UI
+            configManager = new ConfigManager();
             ApplyLanguageSetting();
+
+            InitializeComponents();
             InitializeEventHandlers();
             var (inputDevices, outputDevices) = RefreshDeviceLists();
 
@@ -87,7 +90,7 @@ namespace MidiForwarder
                 {
                     if (!isSilent)
                     {
-                        this.Invoke(() =>
+                        Invoke(() =>
                         {
                             MessageBox.Show(result.ErrorMessage, LocalizationManager.GetString("UpdateCheckErrorTitle"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -98,14 +101,14 @@ namespace MidiForwarder
 
                 if (result.HasUpdate)
                 {
-                    this.Invoke(() =>
+                    Invoke(() =>
                     {
                         ShowUpdateDialog(result);
                     });
                 }
                 else if (!isSilent)
                 {
-                    this.Invoke(() =>
+                    Invoke(() =>
                     {
                         MessageBox.Show(LocalizationManager.GetString("UpdateNoUpdateMessage"),
                             LocalizationManager.GetString("UpdateCheckTitle"),
@@ -117,7 +120,7 @@ namespace MidiForwarder
             {
                 if (!isSilent)
                 {
-                    this.Invoke(() =>
+                    Invoke(() =>
                     {
                         MessageBox.Show($"{LocalizationManager.GetString("UpdateCheckError")}: {ex.Message}",
                             LocalizationManager.GetString("UpdateCheckErrorTitle"),
@@ -127,7 +130,7 @@ namespace MidiForwarder
             }
         }
 
-        private void ShowUpdateDialog(UpdateCheckResult result)
+        private static void ShowUpdateDialog(UpdateCheckResult result)
         {
             var message = string.Format(LocalizationManager.GetString("UpdateAvailableMessage"),
                 result.CurrentVersion, result.LatestVersion);
@@ -142,14 +145,13 @@ namespace MidiForwarder
 
             if (dialogResult == DialogResult.Yes)
             {
-                updateManager?.OpenReleasePage(result.DownloadUrl);
+                UpdateManager.OpenReleasePage(result.DownloadUrl);
             }
         }
 
         private void InitializeComponents()
         {
-            // 初始化各个管理器
-            configManager = new ConfigManager();
+            // 初始化各个管理器（configManager已在构造函数中创建）
             midiManager = new MidiManager();
             layout = new MainFormLayout(this);
             trayManager = new TrayManager(configManager!.Config.MinimizeToTray, configManager.Config.Language, configManager.Config.AutoCheckUpdate);
@@ -169,7 +171,6 @@ namespace MidiForwarder
             var language = configManager.Config.Language;
             if (!string.IsNullOrEmpty(language))
             {
-                // 使用配置的语言
                 LocalizationManager.SetLanguage(language);
             }
             // 如果 Language 为空，则使用系统默认语言
@@ -342,7 +343,12 @@ namespace MidiForwarder
         private void ExitApplication()
         {
             isClosing = true;
-            Application.Exit();
+            // 先释放资源，再关闭窗体
+            midiManager?.Dispose();
+            trayManager?.Dispose();
+            updateManager?.Dispose();
+            // 使用 Close 而不是 Application.Exit 避免集合修改异常
+            Close();
         }
 
         private void MainForm_FormClosing(object? sender, FormClosingEventArgs e)
@@ -401,7 +407,5 @@ namespace MidiForwarder
                 updateManager?.Dispose();
             }
         }
-
-
     }
 }

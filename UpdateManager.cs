@@ -24,7 +24,7 @@ namespace MidiForwarder
         public string PublishedAt { get; set; } = "";
 
         [JsonPropertyName("assets")]
-        public List<ReleaseAsset> Assets { get; set; } = new();
+        public List<ReleaseAsset> Assets { get; set; } = [];
     }
 
     public class ReleaseAsset
@@ -68,7 +68,7 @@ namespace MidiForwarder
             currentVersion = GetCurrentVersion();
         }
 
-        private string GetCurrentVersion()
+        private static string GetCurrentVersion()
         {
             try
             {
@@ -150,7 +150,7 @@ namespace MidiForwarder
             }
         }
 
-        private bool IsNewerVersion(string latest, string current)
+        private static bool IsNewerVersion(string latest, string current)
         {
             try
             {
@@ -165,7 +165,7 @@ namespace MidiForwarder
             }
         }
 
-        public void OpenReleasePage(string url)
+        public static void OpenReleasePage(string url)
         {
             try
             {
@@ -188,6 +188,7 @@ namespace MidiForwarder
         public void Dispose()
         {
             httpClient?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

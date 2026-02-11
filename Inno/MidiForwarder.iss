@@ -365,11 +365,11 @@ var
 begin
   ConfigContent := ReadConfigFile();
   
-  // 将语言代码转换为应用程序使用的格式
+  // 将语言代码转换为应用程序使用的格式（使用完整的 culture name）
   if LangCode = 'chinesesimplified' then
-    LangValue := 'zh'
+    LangValue := 'zh-CN'
   else if LangCode = 'english' then
-    LangValue := 'en'
+    LangValue := 'en-US'
   else
     LangValue := ''; // 默认使用系统语言
   
@@ -427,8 +427,10 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "startup"; Description: "{cm:AutoStartProgram,{#StringChange(MyAppName, '&', '&&')}}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "bin\Release\net8.0-windows\win-x64\publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\Release\net8.0-windows\win-x64\publish\*.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\Release\net8.0-windows\win-x64\publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\Release\net8.0-windows\win-x64\publish\*.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\Release\net8.0-windows\win-x64\publish\zh-CN\*"; DestDir: "{app}\zh-CN"; Flags: ignoreversion
+Source: "..\bin\Release\net8.0-windows\win-x64\publish\en-US\*"; DestDir: "{app}\en-US"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
