@@ -2,8 +2,9 @@ namespace MidiForwarder
 {
     public class AppConfig
     {
-        public int SelectedInputDeviceId { get; set; } = -1;
-        public int SelectedOutputDeviceId { get; set; } = -1;
+        // 设备信息格式: "[ID] 设备名称"，例如 "[0] MIDI Keyboard"
+        public string SelectedInputDevice { get; set; } = "";
+        public string SelectedOutputDevice { get; set; } = "";
         public bool AutoBoot { get; set; } = false;  // 开机自启动
         public bool AutoConnectOnStartup { get; set; } = false;
         public bool MinimizeToTrayOnClose { get; set; } = true;  // 关闭时最小化到托盘

@@ -64,11 +64,47 @@ namespace MidiForwarder
             }
         }
 
-        public void UpdateSelectedDevices(int inputId, int outputId)
+        public void UpdateSelectedDevices(string inputDevice, string outputDevice)
         {
-            config.SelectedInputDeviceId = inputId;
-            config.SelectedOutputDeviceId = outputId;
+            config.SelectedInputDevice = inputDevice;
+            config.SelectedOutputDevice = outputDevice;
             SaveConfig();
+        }
+
+        // 从设备信息字符串中解析ID，格式: "[ID] 设备名称"
+        public static int? ParseDeviceId(string deviceInfo)
+        {
+            if (string.IsNullOrEmpty(deviceInfo)) return null;
+
+            try
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(deviceInfo, @"^\[(\d+)\]");
+                if (match.Success && int.TryParse(match.Groups[1].Value, out int id))
+                {
+                    return id;
+                }
+            }
+            catch { }
+
+            return null;
+        }
+
+        // 从设备信息字符串中获取设备名称（不含ID）
+        public static string ParseDeviceName(string deviceInfo)
+        {
+            if (string.IsNullOrEmpty(deviceInfo)) return "";
+
+            try
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(deviceInfo, @"^\[\d+\]\s*(.+)$");
+                if (match.Success)
+                {
+                    return match.Groups[1].Value.Trim();
+                }
+            }
+            catch { }
+
+            return deviceInfo;
         }
 
         public void UpdateAutoConnect(bool autoConnect)

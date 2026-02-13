@@ -337,9 +337,10 @@ begin
   if ConfigContent = '' then
   begin
     // 配置文件不存在，创建新的配置（与 AppConfig 类一致）
+    // 设备信息格式: "[ID] 设备名称"，例如 "[0] MIDI Keyboard"
     ConfigContent := '{' + #13#10 +
-                     '  "SelectedInputDeviceId": -1,' + #13#10 +
-                     '  "SelectedOutputDeviceId": -1,' + #13#10 +
+                     '  "SelectedInputDevice": "",' + #13#10 +
+                     '  "SelectedOutputDevice": "",' + #13#10 +
                      '  "AutoBoot": ' + AutoStartStr + ',' + #13#10 +
                      '  "AutoConnectOnStartup": false,' + #13#10 +
                      '  "MinimizeToTrayOnClose": true,' + #13#10 +
@@ -380,9 +381,10 @@ begin
   if ConfigContent = '' then
   begin
     // 配置文件不存在，创建新的配置（与 AppConfig 类一致）
+    // 设备信息格式: "[ID] 设备名称"，例如 "[0] MIDI Keyboard"
     ConfigContent := '{' + #13#10 +
-                     '  "SelectedInputDeviceId": -1,' + #13#10 +
-                     '  "SelectedOutputDeviceId": -1,' + #13#10 +
+                     '  "SelectedInputDevice": "",' + #13#10 +
+                     '  "SelectedOutputDevice": "",' + #13#10 +
                      '  "AutoBoot": false,' + #13#10 +
                      '  "AutoConnectOnStartup": false,' + #13#10 +
                      '  "MinimizeToTrayOnClose": true,' + #13#10 +
@@ -436,9 +438,6 @@ Name: "startup"; Description: "{cm:AutoStartProgram,{#StringChange(MyAppName, '&
 
 [Files]
 Source: "..\bin\Release\net8.0-windows\win-x64\publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\bin\Release\net8.0-windows\win-x64\publish\*.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\bin\Release\net8.0-windows\win-x64\zh-CN\*"; DestDir: "{app}\zh-CN"; Flags: ignoreversion
-Source: "..\bin\Release\net8.0-windows\win-x64\en-US\*"; DestDir: "{app}\en-US"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

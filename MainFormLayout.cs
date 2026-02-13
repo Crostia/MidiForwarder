@@ -24,6 +24,7 @@ namespace MidiForwarder
         public event EventHandler? AutoConnectChanged;
         public event EventHandler? InputSelectionChanged;
         public event EventHandler? OutputSelectionChanged;
+        public event EventHandler? DeviceSelectionChangedWhileConnected;
 
         public MainFormLayout(Form form)
         {
@@ -168,8 +169,24 @@ namespace MidiForwarder
             ConnectButton.Click += (s, e) => ConnectButtonClicked?.Invoke(this, e);
             RefreshButton.Click += (s, e) => RefreshButtonClicked?.Invoke(this, e);
             AutoConnectCheckBox.CheckedChanged += (s, e) => AutoConnectChanged?.Invoke(this, e);
-            InputComboBox.SelectedIndexChanged += (s, e) => InputSelectionChanged?.Invoke(this, e);
-            OutputComboBox.SelectedIndexChanged += (s, e) => OutputSelectionChanged?.Invoke(this, e);
+            InputComboBox.SelectedIndexChanged += (s, e) =>
+            {
+                // 如果已连接，先断开连接
+                if (IsConnected)
+                {
+                    DeviceSelectionChangedWhileConnected?.Invoke(this, e);
+                }
+                InputSelectionChanged?.Invoke(this, e);
+            };
+            OutputComboBox.SelectedIndexChanged += (s, e) =>
+            {
+                // 如果已连接，先断开连接
+                if (IsConnected)
+                {
+                    DeviceSelectionChangedWhileConnected?.Invoke(this, e);
+                }
+                OutputSelectionChanged?.Invoke(this, e);
+            };
         }
 
         private void UpdateLocalizedText()
@@ -193,6 +210,8 @@ namespace MidiForwarder
         {
             ConnectButton.Enabled = enabled;
         }
+
+        public bool IsConnected => ConnectButton.Text == LocalizationManager.GetString("DisconnectButton");
 
         public void SetConnectedState(bool connected)
         {

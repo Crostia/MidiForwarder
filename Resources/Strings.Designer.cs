@@ -218,6 +218,15 @@ namespace MidiForwarder.Resources {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to 设备选择已更改，连接已断开.
+        /// </summary>
+        internal static string MsgDisconnectedDueToDeviceChange {
+            get {
+                return ResourceManager.GetString("MsgDisconnectedDueToDeviceChange", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to 设备列表已刷新.
         /// </summary>
         internal static string MsgDevicesRefreshed {
@@ -310,9 +319,9 @@ namespace MidiForwarder.Resources {
         /// <summary>
         ///   Looks up a localized string similar to 开机自启动.
         /// </summary>
-        internal static string TrayAutoStart {
+        internal static string TrayAutoBoot {
             get {
-                return ResourceManager.GetString("TrayAutoStart", resourceCulture);
+                return ResourceManager.GetString("TrayAutoBoot", resourceCulture);
             }
         }
 

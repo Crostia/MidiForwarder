@@ -227,4 +227,7 @@
   <data name="MsgAutoCheckUpdateDisabled" xml:space="preserve">
     <value>自动检查更新已禁用</value>
   </data>
+  <data name="MsgDisconnectedDueToDeviceChange" xml:space="preserve">
+    <value>设备选择已更改，连接已断开</value>
+  </data>
 </root>

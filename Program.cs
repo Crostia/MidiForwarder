@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 
 namespace MidiForwarder
 {
@@ -125,9 +124,6 @@ namespace MidiForwarder
 
         private const int SW_RESTORE = 9;
 
-        [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial IntPtr FindWindow(string? lpClassName, string? lpWindowName);
-
         [LibraryImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -174,6 +170,10 @@ namespace MidiForwarder
         private System.Windows.Forms.Timer? autoConnectRetryTimer;
         private int autoConnectRetryCount = 0;
         private const int MaxAutoConnectRetries = 100; // 最大重试次数（约50分钟）
+        private bool isUserInteracted = false; // 标记用户是否进行了交互
+
+        private System.Windows.Forms.Timer? deviceRefreshTimer; // 设备列表自动刷新定时器
+        private const int DeviceRefreshInterval = 33; // 每秒30次 ≈ 33毫秒
 
         public MainForm(string[] args, uint showWindowMessageId = 0)
         {
@@ -188,7 +188,7 @@ namespace MidiForwarder
             // 如果是开机自启动，先延迟再初始化
             if (isAutoStart && configManager?.Config.AutoBootDelayMinutes > 0)
             {
-                InitializeDelayedStartup(configManager.Config.AutoBootDelayMinutes);
+                _ = InitializeDelayedStartupAsync(configManager.Config.AutoBootDelayMinutes);
             }
             else
             {
@@ -196,11 +196,11 @@ namespace MidiForwarder
             }
         }
 
-        private void InitializeDelayedStartup(int delayMinutes)
+        private async Task InitializeDelayedStartupAsync(int delayMinutes)
         {
             // 静默启动：在后台等待，不显示窗口
-            // 使用同步等待，保持应用程序不显示任何UI
-            Thread.Sleep(delayMinutes * 60 * 1000);
+            // 使用异步等待，避免阻塞UI线程
+            await Task.Delay(delayMinutes * 60 * 1000);
             InitializeMainForm();
         }
 
@@ -230,8 +230,8 @@ namespace MidiForwarder
 
             // 自动连接（支持重试）
             if (configManager?.Config.AutoConnectOnStartup == true &&
-                configManager.Config.SelectedInputDeviceId >= 0 &&
-                configManager.Config.SelectedOutputDeviceId >= 0)
+                !string.IsNullOrEmpty(configManager.Config.SelectedInputDevice) &&
+                !string.IsNullOrEmpty(configManager.Config.SelectedOutputDevice))
             {
                 TryAutoConnectWithRetry(inputDevices, outputDevices);
             }
@@ -247,13 +247,15 @@ namespace MidiForwarder
         private void TryAutoConnectWithRetry(List<MidiDeviceInfo> inputDevices, List<MidiDeviceInfo> outputDevices)
         {
             // 先尝试立即连接
-            if (TryConnectSavedDevices(inputDevices, outputDevices))
+            var result = TryConnectSavedDevicesWithDetails(inputDevices, outputDevices);
+            if (result == ConnectResult.Success)
             {
                 return; // 连接成功，不需要重试
             }
 
             // 连接失败，启动重试定时器（静默重试，不显示日志）
             autoConnectRetryCount = 0;
+            isUserInteracted = false; // 重置用户交互标记
             var retryInterval = configManager?.Config.AutoConnectRetryIntervalSeconds ?? 30;
 
             autoConnectRetryTimer = new System.Windows.Forms.Timer
@@ -263,18 +265,37 @@ namespace MidiForwarder
 
             autoConnectRetryTimer.Tick += (s, e) =>
             {
+                // 检查用户是否进行了交互，如果是则停止重试
+                if (isUserInteracted)
+                {
+                    autoConnectRetryTimer?.Stop();
+                    autoConnectRetryTimer?.Dispose();
+                    autoConnectRetryTimer = null;
+                    return;
+                }
+
                 autoConnectRetryCount++;
 
-                // 刷新设备列表
-                var (newInputDevices, newOutputDevices) = RefreshDeviceLists();
+                // ID不匹配时，依赖自动刷新设备列表（每秒30次）更新设备列表
+                // 这里直接使用当前设备列表（已被自动刷新更新）
+                var inputDevices = MidiManager.GetInputDevices();
+                var outputDevices = MidiManager.GetOutputDevices();
 
-                if (TryConnectSavedDevices(newInputDevices, newOutputDevices))
+                var tryResult = TryConnectSavedDevicesWithDetails(inputDevices, outputDevices);
+
+                if (tryResult == ConnectResult.Success)
                 {
                     // 连接成功，停止定时器
                     autoConnectRetryTimer?.Stop();
                     autoConnectRetryTimer?.Dispose();
                     autoConnectRetryTimer = null;
                     // 静默模式：不输出日志
+                }
+                else if (tryResult == ConnectResult.IdMismatch)
+                {
+                    // ID不匹配，依赖自动刷新设备列表（每秒30次）来更新设备列表
+                    // 等待下次定时器间隔后再次尝试（不增加重试计数）
+                    autoConnectRetryCount--;
                 }
                 else if (autoConnectRetryCount >= MaxAutoConnectRetries)
                 {
@@ -284,26 +305,125 @@ namespace MidiForwarder
                     autoConnectRetryTimer = null;
                     // 静默模式：不输出日志
                 }
-                // 继续重试（静默模式，不输出日志）
+                // 继续重试（静默模式：不输出日志）
             };
 
             autoConnectRetryTimer.Start();
+        }
+
+        private enum ConnectResult
+        {
+            Success,      // 连接成功
+            IdMismatch,   // 名称匹配但ID不匹配，需要刷新
+            NotFound      // 设备未找到
+        }
+
+        private ConnectResult TryConnectSavedDevicesWithDetails(List<MidiDeviceInfo> inputDevices, List<MidiDeviceInfo> outputDevices)
+        {
+            if (configManager == null) return ConnectResult.NotFound;
+
+            var savedInputDevice = configManager.Config.SelectedInputDevice;
+            var savedOutputDevice = configManager.Config.SelectedOutputDevice;
+
+            // 从配置中解析保存的ID
+            var savedInputId = ConfigManager.ParseDeviceId(savedInputDevice);
+            var savedOutputId = ConfigManager.ParseDeviceId(savedOutputDevice);
+
+            // 使用设备名称匹配（格式: "[ID] 设备名称"）
+            int? matchedInputId = null;
+            int? matchedOutputId = null;
+
+            // 尝试通过完整名称匹配输入设备
+            if (!string.IsNullOrEmpty(savedInputDevice))
+            {
+                var matchedInput = inputDevices.FirstOrDefault(d => d.Name == savedInputDevice);
+                if (matchedInput != null)
+                {
+                    matchedInputId = matchedInput.Id;
+                }
+            }
+
+            // 尝试通过完整名称匹配输出设备
+            if (!string.IsNullOrEmpty(savedOutputDevice))
+            {
+                var matchedOutput = outputDevices.FirstOrDefault(d => d.Name == savedOutputDevice);
+                if (matchedOutput != null)
+                {
+                    matchedOutputId = matchedOutput.Id;
+                }
+            }
+
+            // 如果名称匹配成功，但ID与配置不符，说明设备列表发生了变化
+            if (matchedInputId.HasValue && matchedOutputId.HasValue && savedInputId.HasValue && savedOutputId.HasValue)
+            {
+                if (matchedInputId.Value != savedInputId.Value || matchedOutputId.Value != savedOutputId.Value)
+                {
+                    // ID不匹配，需要刷新设备列表
+                    return ConnectResult.IdMismatch;
+                }
+            }
+
+            // 如果找到了匹配的设备，进行连接
+            if (matchedInputId.HasValue && matchedOutputId.HasValue)
+            {
+                SelectDevicesById(matchedInputId.Value, matchedOutputId.Value, inputDevices, outputDevices);
+                ConnectDevices();
+                return ConnectResult.Success;
+            }
+
+            return ConnectResult.NotFound;
         }
 
         private bool TryConnectSavedDevices(List<MidiDeviceInfo> inputDevices, List<MidiDeviceInfo> outputDevices)
         {
             if (configManager == null) return false;
 
-            var savedInputId = configManager.Config.SelectedInputDeviceId;
-            var savedOutputId = configManager.Config.SelectedOutputDeviceId;
+            var savedInputDevice = configManager.Config.SelectedInputDevice;
+            var savedOutputDevice = configManager.Config.SelectedOutputDevice;
 
-            // 检查保存的设备是否存在于当前设备列表中
-            var inputExists = inputDevices.Any(d => d.Id == savedInputId);
-            var outputExists = outputDevices.Any(d => d.Id == savedOutputId);
+            // 从配置中解析保存的ID
+            var savedInputId = ConfigManager.ParseDeviceId(savedInputDevice);
+            var savedOutputId = ConfigManager.ParseDeviceId(savedOutputDevice);
 
-            if (inputExists && outputExists)
+            // 使用设备名称匹配（格式: "[ID] 设备名称"）
+            int? matchedInputId = null;
+            int? matchedOutputId = null;
+
+            // 尝试通过完整名称匹配输入设备
+            if (!string.IsNullOrEmpty(savedInputDevice))
             {
-                SelectDevicesById(savedInputId, savedOutputId, inputDevices, outputDevices);
+                var matchedInput = inputDevices.FirstOrDefault(d => d.Name == savedInputDevice);
+                if (matchedInput != null)
+                {
+                    matchedInputId = matchedInput.Id;
+                }
+            }
+
+            // 尝试通过完整名称匹配输出设备
+            if (!string.IsNullOrEmpty(savedOutputDevice))
+            {
+                var matchedOutput = outputDevices.FirstOrDefault(d => d.Name == savedOutputDevice);
+                if (matchedOutput != null)
+                {
+                    matchedOutputId = matchedOutput.Id;
+                }
+            }
+
+            // 如果名称匹配成功，但ID与配置不符，说明设备列表发生了变化
+            // 此时返回false，触发设备列表刷新
+            if (matchedInputId.HasValue && matchedOutputId.HasValue && savedInputId.HasValue && savedOutputId.HasValue)
+            {
+                if (matchedInputId.Value != savedInputId.Value || matchedOutputId.Value != savedOutputId.Value)
+                {
+                    // ID不匹配，需要刷新设备列表
+                    return false;
+                }
+            }
+
+            // 如果找到了匹配的设备，进行连接
+            if (matchedInputId.HasValue && matchedOutputId.HasValue)
+            {
+                SelectDevicesById(matchedInputId.Value, matchedOutputId.Value, inputDevices, outputDevices);
                 ConnectDevices();
                 return true;
             }
@@ -420,6 +540,9 @@ namespace MidiForwarder
 
             // 订阅窗体事件
             FormClosing += MainForm_FormClosing;
+
+            // 启动设备列表自动刷新定时器（初始状态为未连接）
+            StartDeviceRefreshTimer();
         }
 
         private void ApplyLanguageSetting()
@@ -447,14 +570,38 @@ namespace MidiForwarder
             if (layout is null || midiManager is null || trayManager is null || configManager is null) return;
 
             // UI事件
-            layout.ConnectButtonClicked += (s, e) => OnConnectButtonClick();
-            layout.RefreshButtonClicked += (s, e) => OnRefreshButtonClick();
+            layout.ConnectButtonClicked += (s, e) =>
+            {
+                isUserInteracted = true; // 标记用户交互
+                OnConnectButtonClick();
+            };
+            layout.RefreshButtonClicked += (s, e) =>
+            {
+                isUserInteracted = true; // 标记用户交互
+                OnRefreshButtonClick();
+            };
             layout.AutoConnectChanged += (s, e) =>
             {
+                isUserInteracted = true; // 标记用户交互
                 configManager?.UpdateAutoConnect(layout.AutoConnectCheckBox.Checked);
             };
-            layout.InputSelectionChanged += (s, e) => UpdateConnectButtonState();
-            layout.OutputSelectionChanged += (s, e) => UpdateConnectButtonState();
+            layout.InputSelectionChanged += (s, e) =>
+            {
+                isUserInteracted = true; // 标记用户交互
+                UpdateConnectButtonState();
+            };
+            layout.OutputSelectionChanged += (s, e) =>
+            {
+                isUserInteracted = true; // 标记用户交互
+                UpdateConnectButtonState();
+            };
+            layout.DeviceSelectionChangedWhileConnected += (s, e) =>
+            {
+                isUserInteracted = true; // 标记用户交互
+                // 设备选择变化时，如果已连接则断开连接
+                DisconnectDevices();
+                layout.LogMessage(LocalizationManager.GetString("MsgDisconnectedDueToDeviceChange"));
+            };
 
             // MIDI管理器事件
             midiManager.MessageReceived += (s, e) =>
@@ -470,14 +617,33 @@ namespace MidiForwarder
             midiManager.Connected += (s, e) =>
             {
                 layout!.SetConnectedState(true);
-                configManager?.UpdateSelectedDevices(midiManager.SelectedInputDeviceId, midiManager.SelectedOutputDeviceId);
+
+                // 获取当前选中的设备信息（格式: "[ID] 设备名称"）
+                string inputDevice = "";
+                string outputDevice = "";
+                if (layout!.InputComboBox.SelectedIndex >= 0)
+                {
+                    inputDevice = layout!.InputComboBox.SelectedItem?.ToString() ?? "";
+                }
+                if (layout!.OutputComboBox.SelectedIndex >= 0)
+                {
+                    outputDevice = layout!.OutputComboBox.SelectedItem?.ToString() ?? "";
+                }
+
+                configManager?.UpdateSelectedDevices(inputDevice, outputDevice);
                 layout!.LogMessage(LocalizationManager.GetString("MsgConnected"));
+
+                // 连接成功后停止自动刷新设备列表
+                StopDeviceRefreshTimer();
             };
 
             midiManager.Disconnected += (s, e) =>
             {
                 layout!.SetConnectedState(false);
                 layout!.LogMessage(LocalizationManager.GetString("MsgDisconnected"));
+
+                // 断开连接后启动自动刷新设备列表
+                StartDeviceRefreshTimer();
             };
 
             // 托盘管理器事件
@@ -551,27 +717,79 @@ namespace MidiForwarder
             midiManager?.Disconnect();
         }
 
-        private (List<MidiDeviceInfo> inputDevices, List<MidiDeviceInfo> outputDevices) RefreshDeviceLists()
+        private void StartDeviceRefreshTimer()
+        {
+            // 如果定时器已存在且正在运行，不重复启动
+            if (deviceRefreshTimer?.Enabled == true) return;
+
+            deviceRefreshTimer?.Dispose();
+            deviceRefreshTimer = new System.Windows.Forms.Timer
+            {
+                Interval = DeviceRefreshInterval // 33毫秒 ≈ 每秒30次
+            };
+
+            deviceRefreshTimer.Tick += (s, e) =>
+            {
+                // 检查用户是否进行了交互，如果是则停止刷新
+                if (isUserInteracted)
+                {
+                    StopDeviceRefreshTimer();
+                    return;
+                }
+
+                // 仅在未连接状态下刷新设备列表
+                if (midiManager?.IsConnected != true)
+                {
+                    RefreshDeviceLists(true); // 静默模式刷新
+                }
+            };
+
+            deviceRefreshTimer.Start();
+        }
+
+        private void StopDeviceRefreshTimer()
+        {
+            deviceRefreshTimer?.Stop();
+            deviceRefreshTimer?.Dispose();
+            deviceRefreshTimer = null;
+        }
+
+        private (List<MidiDeviceInfo> inputDevices, List<MidiDeviceInfo> outputDevices) RefreshDeviceLists(bool silent = false)
         {
             if (layout == null) return (new List<MidiDeviceInfo>(), new List<MidiDeviceInfo>());
 
-            // 保存当前选中的设备ID（如果已连接，使用连接的设备ID）
+            // 静默模式：根据名称匹配恢复选中状态
+            // 正常模式：根据ID或索引恢复选中状态
+            string? savedInputName = null;
+            string? savedOutputName = null;
             int? savedInputId = null;
             int? savedOutputId = null;
 
-            if (midiManager?.IsConnected == true)
+            if (silent)
             {
-                // 如果已连接，保存当前连接的设备ID
-                savedInputId = midiManager.SelectedInputDeviceId;
-                savedOutputId = midiManager.SelectedOutputDeviceId;
+                // 静默模式：保存当前选中的设备名称
+                if (layout.InputComboBox.SelectedIndex >= 0)
+                {
+                    savedInputName = layout.InputComboBox.SelectedItem?.ToString();
+                }
+                if (layout.OutputComboBox.SelectedIndex >= 0)
+                {
+                    savedOutputName = layout.OutputComboBox.SelectedItem?.ToString();
+                }
             }
-            else if (layout.InputComboBox.SelectedIndex >= 0 && layout.OutputComboBox.SelectedIndex >= 0)
+            else
             {
-                // 未连接时，保存下拉框中当前选中的设备ID
-                // 需要从之前的设备列表获取ID，但这里我们先用SelectedIndex作为近似
-                // 实际上应该根据名称查找，因为设备ID可能会变化
-                savedInputId = layout.InputComboBox.SelectedIndex;
-                savedOutputId = layout.OutputComboBox.SelectedIndex;
+                // 正常模式：保存当前选中的设备ID
+                if (midiManager?.IsConnected == true)
+                {
+                    savedInputId = midiManager.SelectedInputDeviceId;
+                    savedOutputId = midiManager.SelectedOutputDeviceId;
+                }
+                else if (layout.InputComboBox.SelectedIndex >= 0 && layout.OutputComboBox.SelectedIndex >= 0)
+                {
+                    savedInputId = layout.InputComboBox.SelectedIndex;
+                    savedOutputId = layout.OutputComboBox.SelectedIndex;
+                }
             }
 
             layout.InputComboBox.Items.Clear();
@@ -591,7 +809,36 @@ namespace MidiForwarder
             }
 
             // 恢复选中状态
-            if (midiManager?.IsConnected == true && savedInputId.HasValue && savedOutputId.HasValue)
+            if (silent && (!string.IsNullOrEmpty(savedInputName) || !string.IsNullOrEmpty(savedOutputName)))
+            {
+                // 静默模式：根据名称匹配恢复选中状态
+                if (!string.IsNullOrEmpty(savedInputName))
+                {
+                    var inputIndex = inputDevices.FindIndex(d => d.Name == savedInputName);
+                    if (inputIndex >= 0 && inputIndex < layout.InputComboBox.Items.Count)
+                        layout.InputComboBox.SelectedIndex = inputIndex;
+                    else if (layout.InputComboBox.Items.Count > 0)
+                        layout.InputComboBox.SelectedIndex = 0;
+                }
+                else if (layout.InputComboBox.Items.Count > 0)
+                {
+                    layout.InputComboBox.SelectedIndex = 0;
+                }
+
+                if (!string.IsNullOrEmpty(savedOutputName))
+                {
+                    var outputIndex = outputDevices.FindIndex(d => d.Name == savedOutputName);
+                    if (outputIndex >= 0 && outputIndex < layout.OutputComboBox.Items.Count)
+                        layout.OutputComboBox.SelectedIndex = outputIndex;
+                    else if (layout.OutputComboBox.Items.Count > 0)
+                        layout.OutputComboBox.SelectedIndex = 0;
+                }
+                else if (layout.OutputComboBox.Items.Count > 0)
+                {
+                    layout.OutputComboBox.SelectedIndex = 0;
+                }
+            }
+            else if (midiManager?.IsConnected == true && savedInputId.HasValue && savedOutputId.HasValue)
             {
                 // 已连接状态：根据设备ID找到对应的下拉框索引
                 var inputIndex = inputDevices.FindIndex(d => d.Id == savedInputId.Value);
@@ -609,7 +856,7 @@ namespace MidiForwarder
             }
             else if (savedInputId.HasValue && savedOutputId.HasValue)
             {
-                // 未连接状态：尝试根据之前保存的索引恢复（如果设备数量足够）
+                // 未连接状态：尝试根据之前保存的索引恢复
                 if (savedInputId.Value < layout.InputComboBox.Items.Count)
                     layout.InputComboBox.SelectedIndex = savedInputId.Value;
                 else if (layout.InputComboBox.Items.Count > 0)
@@ -698,6 +945,8 @@ namespace MidiForwarder
             autoConnectRetryTimer?.Stop();
             autoConnectRetryTimer?.Dispose();
             autoConnectRetryTimer = null;
+            // 停止设备列表自动刷新定时器
+            StopDeviceRefreshTimer();
             // 先释放资源，再关闭窗体
             midiManager?.Dispose();
             trayManager?.Dispose();

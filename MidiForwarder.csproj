@@ -31,11 +31,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="default_form_icon.ico" />
-    <EmbeddedResource Include="default_form_icon.png" />
-    <EmbeddedResource Update="Resources\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
     <EmbeddedResource Update="Resources\Strings.zh-CN.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
@@ -47,7 +42,6 @@
     <Compile Update="Resources\Strings.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
   </ItemGroup>
 
