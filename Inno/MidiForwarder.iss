@@ -444,8 +444,8 @@ Source: "..\bin\Release\net8.0-windows\win-x64\publish\{#MyAppExeName}"; DestDir
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 [Registry]
-; 开机自启注册表项
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletevalue; Tasks: startup
+; 开机自启注册表项（添加 --autoboot 参数以标识开机自启动）
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"" --autoboot"; Flags: uninsdeletevalue; Tasks: startup
 
 [CustomMessages]
 ; 英文自定义消息

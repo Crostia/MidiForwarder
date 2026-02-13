@@ -178,7 +178,7 @@ namespace MidiForwarder
         public MainForm(string[] args, uint showWindowMessageId = 0)
         {
             // 检查是否是通过开机自启动启动的（通过命令行参数判断）
-            isAutoStart = args.Contains("--autostart");
+            isAutoStart = args.Contains("--autoboot");
             showWindowMessage = showWindowMessageId;
 
             // 先加载配置并应用语言设置，再初始化UI
@@ -201,7 +201,16 @@ namespace MidiForwarder
             // 静默启动：在后台等待，不显示窗口
             // 使用异步等待，避免阻塞UI线程
             await Task.Delay(delayMinutes * 60 * 1000);
-            InitializeMainForm();
+            
+            // 确保在UI线程上初始化窗体
+            if (InvokeRequired)
+            {
+                Invoke(new Action(InitializeMainForm));
+            }
+            else
+            {
+                InitializeMainForm();
+            }
         }
 
         private void InitializeMainForm()
@@ -223,9 +232,21 @@ namespace MidiForwarder
 
             if (shouldMinimize && configManager?.Config.MinimizeToTrayOnClose == true)
             {
-                WindowState = FormWindowState.Minimized;
+                // 直接启动到托盘，不显示窗口
                 ShowInTaskbar = false;
+                WindowState = FormWindowState.Minimized;
                 Hide();
+                // 确保托盘图标显示
+                trayManager?.ShowTrayIcon();
+
+                // 首次启动时显示气泡提示（只显示一次）
+                if (configManager?.Config.HasShownTrayPrompt == false)
+                {
+                    trayManager?.ShowBalloonTip(
+                        LocalizationManager.GetString("TrayBalloonTitle"),
+                        LocalizationManager.GetString("TrayBalloonText"));
+                    configManager?.SetTrayPromptShown();
+                }
             }
 
             // 自动连接（支持重试）
@@ -992,9 +1013,7 @@ namespace MidiForwarder
                 {
                     e.Cancel = true;
                     Hide();
-                    trayManager?.ShowBalloonTip(
-                        LocalizationManager.GetString("TrayBalloonTitle"),
-                        LocalizationManager.GetString("TrayBalloonText"));
+                    // 气泡提示已在首次启动时显示，此处不再显示
                 }
                 else
                 {

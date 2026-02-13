@@ -222,8 +222,8 @@ namespace MidiForwarder
                     if (enable)
                     {
                         var exePath = Application.ExecutablePath;
-                        // 添加 --autostart 参数，用于区分开机自启动和手动启动
-                        key.SetValue("MidiForwarder", $"\"{exePath}\" --autostart");
+                        // 添加 --autoboot 参数，用于区分开机自启动和手动启动
+                        key.SetValue("MidiForwarder", $"\"{exePath}\" --autoboot");
                     }
                     else
                     {
@@ -240,6 +240,14 @@ namespace MidiForwarder
         public void ShowBalloonTip(string title, string text)
         {
             notifyIcon?.ShowBalloonTip(2000, title, text, ToolTipIcon.Info);
+        }
+
+        public void ShowTrayIcon()
+        {
+            if (notifyIcon != null)
+            {
+                notifyIcon.Visible = true;
+            }
         }
 
         public void Dispose()
