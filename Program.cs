@@ -635,6 +635,24 @@ namespace MidiForwarder
                 layout!.LogMessage(e);
             };
 
+            midiManager.DeviceLost += (s, e) =>
+            {
+                this.Invoke(new Action(() =>
+                {
+                    layout!.SetConnectedState(false);
+                    layout!.LogMessage(LocalizationManager.GetString("MsgDeviceLost"));
+                }));
+            };
+
+            midiManager.DeviceRestored += (s, e) =>
+            {
+                this.Invoke(new Action(() =>
+                {
+                    layout!.SetConnectedState(true);
+                    layout!.LogMessage(LocalizationManager.GetString("MsgDeviceRestored"));
+                }));
+            };
+
             midiManager.Connected += (s, e) =>
             {
                 layout!.SetConnectedState(true);

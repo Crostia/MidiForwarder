@@ -230,4 +230,10 @@ You can change this setting via the tray menu.</value>
   <data name="MsgDisconnectedDueToDeviceChange" xml:space="preserve">
     <value>Device selection changed, connection disconnected</value>
   </data>
+  <data name="MsgDeviceLost" xml:space="preserve">
+    <value>Device disconnected, attempting to reconnect...</value>
+  </data>
+  <data name="MsgDeviceRestored" xml:space="preserve">
+    <value>Device restored, reconnected successfully</value>
+  </data>
 </root>

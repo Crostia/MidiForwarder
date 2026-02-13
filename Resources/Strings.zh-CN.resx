@@ -230,4 +230,10 @@
   <data name="MsgDisconnectedDueToDeviceChange" xml:space="preserve">
     <value>设备选择已更改，连接已断开</value>
   </data>
+  <data name="MsgDeviceLost" xml:space="preserve">
+    <value>设备已断开，正在尝试自动重连...</value>
+  </data>
+  <data name="MsgDeviceRestored" xml:space="preserve">
+    <value>设备已恢复，重新连接成功</value>
+  </data>
 </root>

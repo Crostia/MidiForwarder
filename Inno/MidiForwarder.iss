@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "MidiForwarder"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.5.0"
 #define MyAppPublisher "Crostia"
 #define MyAppURL "https://github.com/Crostia/MidiForwarder"
 #define MyAppExeName "MidiForwarder.exe"
