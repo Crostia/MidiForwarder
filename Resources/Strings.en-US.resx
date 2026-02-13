@@ -96,11 +96,11 @@
     <value>Refresh Device</value>
   </data>
   <!-- Tray Menu -->
-  <data name="TrayAutoStart" xml:space="preserve">
+  <data name="TrayAutoBoot" xml:space="preserve">
     <value>Start with Windows</value>
   </data>
-  <data name="TrayMinimizeToTray" xml:space="preserve">
-    <value>Minimize to Tray</value>
+  <data name="TrayMinimizeToTrayOnClose" xml:space="preserve">
+    <value>Minimize to Tray on Close</value>
   </data>
   <data name="TrayLanguage" xml:space="preserve">
     <value>Language</value>
@@ -194,16 +194,23 @@ You can change this setting via the tray menu.</value>
   <data name="UpdateAvailableTitle" xml:space="preserve">
     <value>New Version Available</value>
   </data>
-  <data name="UpdateAvailableMessage" xml:space="preserve">
-    <value>New version available!
-
-Current Version: {0}
-Latest Version: {1}
-
-Go to download page?</value>
+  <data name="UpdateAvailableMessageCurrentVersion" xml:space="preserve">
+    <value>Current Version: {0}</value>
+  </data>
+  <data name="UpdateAvailableMessageLatestVersion" xml:space="preserve">
+    <value>Latest Version: {0}</value>
   </data>
   <data name="UpdateReleaseNotes" xml:space="preserve">
     <value>Release Notes:</value>
+  </data>
+  <data name="UpdateDialogYesButton" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="UpdateDialogNoButton" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="UpdateIgnoreThisVersion" xml:space="preserve">
+    <value>Ignore this version</value>
   </data>
   <data name="UpdateNoUpdateMessage" xml:space="preserve">
     <value>You are running the latest version.</value>

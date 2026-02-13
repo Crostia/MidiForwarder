@@ -48,7 +48,7 @@ namespace MidiForwarder
             cultures.Add(new CultureInfo("zh-CN"));
 
             // 英文
-            cultures.Add(new CultureInfo("en"));
+            cultures.Add(new CultureInfo("en-US"));
 
             return cultures;
         }

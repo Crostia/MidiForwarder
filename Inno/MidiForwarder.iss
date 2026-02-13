@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "MidiForwarder"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.1.0"
 #define MyAppPublisher "Crostia"
 #define MyAppURL "https://github.com/Crostia/MidiForwarder"
 #define MyAppExeName "MidiForwarder.exe"
@@ -328,32 +328,36 @@ var
   AutoStartStr: string;
 begin
   ConfigContent := ReadConfigFile();
-  
+
   if AutoStart then
     AutoStartStr := 'true'
   else
     AutoStartStr := 'false';
-  
+
   if ConfigContent = '' then
   begin
-    // 配置文件不存在，创建新的配置
+    // 配置文件不存在，创建新的配置（与 AppConfig 类一致）
     ConfigContent := '{' + #13#10 +
                      '  "SelectedInputDeviceId": -1,' + #13#10 +
                      '  "SelectedOutputDeviceId": -1,' + #13#10 +
-                     '  "AutoStart": ' + AutoStartStr + ',' + #13#10 +
-                     '  "StartMinimized": false,' + #13#10 +
+                     '  "AutoBoot": ' + AutoStartStr + ',' + #13#10 +
                      '  "AutoConnectOnStartup": false,' + #13#10 +
-                     '  "MinimizeToTray": true,' + #13#10 +
+                     '  "MinimizeToTrayOnClose": true,' + #13#10 +
                      '  "HasShownTrayPrompt": false,' + #13#10 +
-                     '  "Language": ""' + #13#10 +
+                     '  "Language": "",' + #13#10 +
+                     '  "AutoCheckUpdate": true,' + #13#10 +
+                     '  "LastUpdateCheck": "0001-01-01T00:00:00",' + #13#10 +
+                     '  "IgnoredVersion": null,' + #13#10 +
+                     '  "AutoBootDelayMinutes": 2,' + #13#10 +
+                     '  "AutoConnectRetryIntervalSeconds": 30' + #13#10 +
                      '}';
   end
   else
   begin
-    // 更新现有的 AutoStart 配置
-    UpdateConfigStringValue(ConfigContent, 'AutoStart', AutoStartStr, False);
+    // 更新现有的 AutoBoot 配置（字段名从 AutoStart 改为 AutoBoot）
+    UpdateConfigStringValue(ConfigContent, 'AutoBoot', AutoStartStr, False);
   end;
-  
+
   WriteConfigFile(ConfigContent);
 end;
 
@@ -364,7 +368,7 @@ var
   LangValue: string;
 begin
   ConfigContent := ReadConfigFile();
-  
+
   // 将语言代码转换为应用程序使用的格式（使用完整的 culture name）
   if LangCode = 'chinesesimplified' then
     LangValue := 'zh-CN'
@@ -372,19 +376,23 @@ begin
     LangValue := 'en-US'
   else
     LangValue := ''; // 默认使用系统语言
-  
+
   if ConfigContent = '' then
   begin
-    // 配置文件不存在，创建新的配置
+    // 配置文件不存在，创建新的配置（与 AppConfig 类一致）
     ConfigContent := '{' + #13#10 +
                      '  "SelectedInputDeviceId": -1,' + #13#10 +
                      '  "SelectedOutputDeviceId": -1,' + #13#10 +
-                     '  "AutoStart": false,' + #13#10 +
-                     '  "StartMinimized": false,' + #13#10 +
+                     '  "AutoBoot": false,' + #13#10 +
                      '  "AutoConnectOnStartup": false,' + #13#10 +
-                     '  "MinimizeToTray": true,' + #13#10 +
+                     '  "MinimizeToTrayOnClose": true,' + #13#10 +
                      '  "HasShownTrayPrompt": false,' + #13#10 +
-                     '  "Language": "' + LangValue + '"' + #13#10 +
+                     '  "Language": "' + LangValue + '",' + #13#10 +
+                     '  "AutoCheckUpdate": true,' + #13#10 +
+                     '  "LastUpdateCheck": "0001-01-01T00:00:00",' + #13#10 +
+                     '  "IgnoredVersion": null,' + #13#10 +
+                     '  "AutoBootDelayMinutes": 2,' + #13#10 +
+                     '  "AutoConnectRetryIntervalSeconds": 30' + #13#10 +
                      '}';
   end
   else
@@ -392,7 +400,7 @@ begin
     // 更新现有的 Language 配置
     UpdateConfigStringValue(ConfigContent, 'Language', LangValue, True);
   end;
-  
+
   WriteConfigFile(ConfigContent);
 end;
 
@@ -429,8 +437,8 @@ Name: "startup"; Description: "{cm:AutoStartProgram,{#StringChange(MyAppName, '&
 [Files]
 Source: "..\bin\Release\net8.0-windows\win-x64\publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\bin\Release\net8.0-windows\win-x64\publish\*.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\bin\Release\net8.0-windows\win-x64\publish\zh-CN\*"; DestDir: "{app}\zh-CN"; Flags: ignoreversion
-Source: "..\bin\Release\net8.0-windows\win-x64\publish\en-US\*"; DestDir: "{app}\en-US"; Flags: ignoreversion
+Source: "..\bin\Release\net8.0-windows\win-x64\zh-CN\*"; DestDir: "{app}\zh-CN"; Flags: ignoreversion
+Source: "..\bin\Release\net8.0-windows\win-x64\en-US\*"; DestDir: "{app}\en-US"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

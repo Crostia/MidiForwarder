@@ -91,7 +91,8 @@ namespace MidiForwarder
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 StartPosition = FormStartPosition.CenterScreen,
                 MaximizeBox = false,
-                MinimizeBox = false
+                MinimizeBox = false,
+                ShowInTaskbar = true
             };
 
             aboutForm.FormClosed += (s, e) =>

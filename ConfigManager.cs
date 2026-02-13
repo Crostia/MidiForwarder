@@ -77,9 +77,9 @@ namespace MidiForwarder
             SaveConfig();
         }
 
-        public void UpdateMinimizeToTray(bool minimizeToTray)
+        public void UpdateMinimizeToTrayOnClose(bool minimizeToTrayOnClose)
         {
-            config.MinimizeToTray = minimizeToTray;
+            config.MinimizeToTrayOnClose = minimizeToTrayOnClose;
             SaveConfig();
         }
 
@@ -106,5 +106,12 @@ namespace MidiForwarder
             config.LastUpdateCheck = checkTime;
             SaveConfig();
         }
+
+        public void UpdateIgnoredVersion(string? version)
+        {
+            config.IgnoredVersion = version;
+            SaveConfig();
+        }
+
     }
 }

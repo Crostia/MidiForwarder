@@ -9,9 +9,20 @@
     <RootNamespace>MidiForwarder</RootNamespace>
     <AssemblyName>MidiForwarder</AssemblyName>
     <ApplicationIcon>default_form_icon.ico</ApplicationIcon>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0</AssemblyVersion>
+    <FileVersion>1.1.0</FileVersion>
+    <Company>MidiForwarder</Company>
+    <Product>MIDI Forwarder</Product>
+    <Copyright>Copyright © 2024</Copyright>
     <SupportedOSPlatform>windows</SupportedOSPlatform>
     <NoWarn>CA1416</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>

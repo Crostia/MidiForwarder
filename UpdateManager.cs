@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -123,6 +122,7 @@ namespace MidiForwarder
 
                 if (installerAsset != null)
                 {
+                    // 使用直接下载链接（GitHub 的 browser_download_url 就是直接下载链接）
                     result.DownloadUrl = installerAsset.BrowserDownloadUrl;
                 }
                 else
