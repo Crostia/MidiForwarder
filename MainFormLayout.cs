@@ -3,11 +3,14 @@ namespace MidiForwarder
     public class MainFormLayout
     {
         private readonly Form form;
+        private static readonly System.Resources.ResourceManager ResourceManager = new("MidiForwarder.Resources", typeof(MainFormLayout).Assembly);
 
         public ComboBox InputComboBox { get; private set; } = null!;
         public ComboBox OutputComboBox { get; private set; } = null!;
         public Button ConnectButton { get; private set; } = null!;
         public Button RefreshButton { get; private set; } = null!;
+        public Button FilterBluetoothButton { get; private set; } = null!;
+        public Button OutputFilterBluetoothButton { get; private set; } = null!;
         public CheckBox AutoConnectCheckBox { get; private set; } = null!;
         public Label StatusLabel { get; private set; } = null!;
         public TextBox LogTextBox { get; private set; } = null!;
@@ -19,12 +22,21 @@ namespace MidiForwarder
         private Label inputLabel = null!;
         private Label outputLabel = null!;
 
+        // ToolTip instances for filter buttons
+        private ToolTip filterButtonToolTip = null!;
+        private ToolTip outputFilterButtonToolTip = null!;
+
         public event EventHandler? ConnectButtonClicked;
         public event EventHandler? RefreshButtonClicked;
+        public event EventHandler? FilterBluetoothButtonClicked;
+        public event EventHandler? OutputFilterBluetoothButtonClicked;
         public event EventHandler? AutoConnectChanged;
         public event EventHandler? InputSelectionChanged;
         public event EventHandler? OutputSelectionChanged;
         public event EventHandler? DeviceSelectionChangedWhileConnected;
+
+        // 用于区分是用户手动选择还是程序刷新
+        public bool IsRefreshingDevices { get; set; } = false;
 
         public MainFormLayout(Form form)
         {
@@ -36,11 +48,15 @@ namespace MidiForwarder
         private void InitializeLayout()
         {
             form.Text = LocalizationManager.GetString("AppTitle");
-            form.Size = new Size(600, 400);
+            form.Size = new Size(600, 500);
             form.FormBorderStyle = FormBorderStyle.FixedDialog;
             form.StartPosition = FormStartPosition.CenterScreen;
             form.MaximizeBox = false;
-            form.MinimizeBox = false;
+            form.MinimizeBox = true;
+
+            // 初始化 ToolTip 实例
+            filterButtonToolTip = new ToolTip();
+            outputFilterButtonToolTip = new ToolTip();
 
             // 输入设备区域
             inputGroupBox = new GroupBox
@@ -56,6 +72,21 @@ namespace MidiForwarder
                 Location = new Point(10, 25),
                 AutoSize = true
             };
+
+            // 蓝牙设备过滤按钮
+            FilterBluetoothButton = new Button
+            {
+                Name = "filterBluetoothButton",
+                Text = "",
+                Image = LoadEmbeddedImage("plus_sign20.png"),
+                Location = new Point(235, 23),
+                Size = new Size(25, 23),
+                FlatStyle = FlatStyle.Flat,
+                FlatAppearance = { BorderSize = 0 },
+                Cursor = Cursors.Hand
+            };
+
+            // 工具提示在 UpdateFilterButtonState 中动态设置
 
             InputComboBox = new ComboBox
             {
@@ -80,6 +111,21 @@ namespace MidiForwarder
                 AutoSize = true
             };
 
+            // 输出设备蓝牙过滤按钮
+            OutputFilterBluetoothButton = new Button
+            {
+                Name = "outputFilterBluetoothButton",
+                Text = "",
+                Image = LoadEmbeddedImage("plus_sign20.png"),
+                Location = new Point(235, 23),
+                Size = new Size(25, 23),
+                FlatStyle = FlatStyle.Flat,
+                FlatAppearance = { BorderSize = 0 },
+                Cursor = Cursors.Hand
+            };
+
+            // 工具提示在 UpdateOutputFilterButtonState 中动态设置
+
             OutputComboBox = new ComboBox
             {
                 Name = "outputComboBox",
@@ -93,7 +139,7 @@ namespace MidiForwarder
             {
                 Text = LocalizationManager.GetString("LogGroup"),
                 Location = new Point(10, 140),
-                Size = new Size(560, 170)
+                Size = new Size(560, 270)
             };
 
             LogTextBox = new TextBox
@@ -103,7 +149,7 @@ namespace MidiForwarder
                 ReadOnly = true,
                 ScrollBars = ScrollBars.Both,
                 Location = new Point(10, 25),
-                Size = new Size(540, 130),
+                Size = new Size(540, 230),
                 Font = new Font("Consolas", 9)
             };
 
@@ -112,7 +158,7 @@ namespace MidiForwarder
             {
                 Name = "autoConnectCheckBox",
                 Text = LocalizationManager.GetString("AutoConnectOnStartup"),
-                Location = new Point(15, 323),
+                Location = new Point(15, 423),
                 AutoSize = true
             };
 
@@ -121,7 +167,7 @@ namespace MidiForwarder
             {
                 Name = "statusLabel",
                 Text = LocalizationManager.GetString("StatusDisconnected"),
-                Location = new Point(150, 324),
+                Location = new Point(150, 424),
                 AutoSize = true,
                 ForeColor = Color.Red
             };
@@ -131,7 +177,7 @@ namespace MidiForwarder
             {
                 Name = "connectButton",
                 Text = LocalizationManager.GetString("ConnectButton"),
-                Location = new Point(320, 317),
+                Location = new Point(320, 417),
                 Size = new Size(120, 30),
                 Enabled = false,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -142,7 +188,7 @@ namespace MidiForwarder
             {
                 Name = "refreshButton",
                 Text = LocalizationManager.GetString("RefreshDevicesButton"),
-                Location = new Point(450, 317),
+                Location = new Point(450, 417),
                 Size = new Size(120, 30),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Padding = new Padding(0, 2, 0, 0)
@@ -150,9 +196,11 @@ namespace MidiForwarder
 
             // 组装控件
             inputGroupBox.Controls.Add(inputLabel);
+            inputGroupBox.Controls.Add(FilterBluetoothButton);
             inputGroupBox.Controls.Add(InputComboBox);
 
             outputGroupBox.Controls.Add(outputLabel);
+            outputGroupBox.Controls.Add(OutputFilterBluetoothButton);
             outputGroupBox.Controls.Add(OutputComboBox);
 
             logGroupBox.Controls.Add(LogTextBox);
@@ -168,9 +216,18 @@ namespace MidiForwarder
             // 绑定事件
             ConnectButton.Click += (s, e) => ConnectButtonClicked?.Invoke(this, e);
             RefreshButton.Click += (s, e) => RefreshButtonClicked?.Invoke(this, e);
+            FilterBluetoothButton.Click += (s, e) => FilterBluetoothButtonClicked?.Invoke(this, e);
+            OutputFilterBluetoothButton.Click += (s, e) => OutputFilterBluetoothButtonClicked?.Invoke(this, e);
             AutoConnectCheckBox.CheckedChanged += (s, e) => AutoConnectChanged?.Invoke(this, e);
             InputComboBox.SelectedIndexChanged += (s, e) =>
             {
+                // 如果是程序刷新设备列表，不触发断开连接
+                if (IsRefreshingDevices)
+                {
+                    InputSelectionChanged?.Invoke(this, e);
+                    return;
+                }
+                
                 // 如果已连接，先断开连接
                 if (IsConnected)
                 {
@@ -180,6 +237,13 @@ namespace MidiForwarder
             };
             OutputComboBox.SelectedIndexChanged += (s, e) =>
             {
+                // 如果是程序刷新设备列表，不触发断开连接
+                if (IsRefreshingDevices)
+                {
+                    OutputSelectionChanged?.Invoke(this, e);
+                    return;
+                }
+                
                 // 如果已连接，先断开连接
                 if (IsConnected)
                 {
@@ -200,6 +264,10 @@ namespace MidiForwarder
             AutoConnectCheckBox.Text = LocalizationManager.GetString("AutoConnectOnStartup");
             RefreshButton.Text = LocalizationManager.GetString("RefreshDevicesButton");
 
+            // 更新蓝牙过滤按钮的工具提示
+            UpdateFilterButtonToolTip();
+            UpdateOutputFilterButtonToolTip();
+
             // 根据当前状态更新状态标签和连接按钮
             bool isConnected = ConnectButton.Text == LocalizationManager.GetString("DisconnectButton") ||
                               (ConnectButton.Text != LocalizationManager.GetString("ConnectButton") && StatusLabel.ForeColor == Color.Green);
@@ -209,6 +277,52 @@ namespace MidiForwarder
         public void UpdateConnectButtonState(bool enabled)
         {
             ConnectButton.Enabled = enabled;
+        }
+
+        /// <summary>
+        /// 更新输入设备蓝牙过滤按钮状态（+ 或 -）
+        /// </summary>
+        /// <param name="isInExclusionList">设备是否在排除名单中</param>
+        public void UpdateFilterButtonState(bool isInExclusionList)
+        {
+            string imageName = isInExclusionList ? "minus_sign20.png" : "plus_sign20.png";
+            FilterBluetoothButton.Image = LoadEmbeddedImage(imageName);
+            UpdateFilterButtonToolTip(isInExclusionList);
+        }
+
+        /// <summary>
+        /// 更新输入设备蓝牙过滤按钮工具提示
+        /// </summary>
+        private void UpdateFilterButtonToolTip(bool? isInExclusionList = null)
+        {
+            isInExclusionList ??= FilterBluetoothButton.Image?.ToString()?.Contains("minus") ?? false;
+            string tooltipText = isInExclusionList.Value
+                ? LocalizationManager.GetString("RemoveFromExclusionList")
+                : LocalizationManager.GetString("AddToExclusionList");
+            filterButtonToolTip.SetToolTip(FilterBluetoothButton, tooltipText);
+        }
+
+        /// <summary>
+        /// 更新输出设备蓝牙过滤按钮状态（+ 或 -）
+        /// </summary>
+        /// <param name="isInExclusionList">设备是否在排除名单中</param>
+        public void UpdateOutputFilterButtonState(bool isInExclusionList)
+        {
+            string imageName = isInExclusionList ? "minus_sign20.png" : "plus_sign20.png";
+            OutputFilterBluetoothButton.Image = LoadEmbeddedImage(imageName);
+            UpdateOutputFilterButtonToolTip(isInExclusionList);
+        }
+
+        /// <summary>
+        /// 更新输出设备蓝牙过滤按钮工具提示
+        /// </summary>
+        private void UpdateOutputFilterButtonToolTip(bool? isInExclusionList = null)
+        {
+            isInExclusionList ??= OutputFilterBluetoothButton.Image?.ToString()?.Contains("minus") ?? false;
+            string tooltipText = isInExclusionList.Value
+                ? LocalizationManager.GetString("RemoveFromExclusionList")
+                : LocalizationManager.GetString("AddToExclusionList");
+            outputFilterButtonToolTip.SetToolTip(OutputFilterBluetoothButton, tooltipText);
         }
 
         public bool IsConnected => ConnectButton.Text == LocalizationManager.GetString("DisconnectButton");
@@ -243,6 +357,15 @@ namespace MidiForwarder
             {
                 LogTextBox.Clear();
             }
+        }
+
+        private static Image LoadEmbeddedImage(string resourceName)
+        {
+            var assembly = typeof(MainFormLayout).Assembly;
+            string fullResourceName = $"MidiForwarder.Resources.{resourceName}";
+            using var stream = assembly.GetManifestResourceStream(fullResourceName)
+                ?? throw new InvalidOperationException($"Resource not found: {fullResourceName}");
+            return Image.FromStream(stream);
         }
     }
 }

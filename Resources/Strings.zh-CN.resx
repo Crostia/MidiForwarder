@@ -236,4 +236,73 @@
   <data name="MsgDeviceRestored" xml:space="preserve">
     <value>设备已恢复，重新连接成功</value>
   </data>
+  <data name="AddToExclusionList" xml:space="preserve">
+    <value>添加到蓝牙设备白名单</value>
+  </data>
+  <data name="RemoveFromExclusionList" xml:space="preserve">
+    <value>从蓝牙设备白名单中移除</value>
+  </data>
+  <!-- Bluetooth Filter Log Messages -->
+  <data name="LogAddedToExclusionList" xml:space="preserve">
+    <value>已将 '{0}' 添加到蓝牙设备白名单</value>
+  </data>
+  <data name="LogRemovedFromExclusionList" xml:space="preserve">
+    <value>已将 '{0}' 从蓝牙设备白名单中移除</value>
+  </data>
+  <data name="LogDeviceWillNotBeBluetooth" xml:space="preserve">
+    <value>该设备将不再被识别为蓝牙设备</value>
+  </data>
+  <data name="LogDeviceWillResumeBluetooth" xml:space="preserve">
+    <value>该设备将恢复蓝牙设备检测</value>
+  </data>
+  <!-- Bluetooth Detection Log Messages -->
+  <data name="LogBluetoothMidiDetected" xml:space="preserve">
+    <value>检测到蓝牙MIDI设备</value>
+  </data>
+  <data name="LogBluetoothNote" xml:space="preserve">
+    <value>注意：蓝牙设备可能出现驱动状态与实际连接状态不同步的情况</value>
+  </data>
+  <data name="LogBluetoothTryIfFail" xml:space="preserve">
+    <value>如果无法收发MIDI消息，请尝试：</value>
+  </data>
+  <data name="LogBluetoothTry1" xml:space="preserve">
+    <value>1. 检查蓝牙设备是否真正连接</value>
+  </data>
+  <data name="LogBluetoothTry2" xml:space="preserve">
+    <value>2. 断开并重新连接设备</value>
+  </data>
+  <data name="LogBluetoothTry3" xml:space="preserve">
+    <value>3. 重启蓝牙设备或重新配对</value>
+  </data>
+  <data name="LogDetectedBluetoothInput" xml:space="preserve">
+    <value>检测到的蓝牙输入设备: {0}</value>
+  </data>
+  <data name="LogDetectedBluetoothOutput" xml:space="preserve">
+    <value>检测到的蓝牙输出设备: {0}</value>
+  </data>
+  <!-- Auto Connect Log Messages -->
+  <data name="LogSelectInputFirst" xml:space="preserve">
+    <value>请先选择一个输入设备</value>
+  </data>
+  <data name="LogSelectOutputFirst" xml:space="preserve">
+    <value>请先选择一个输出设备</value>
+  </data>
+  <data name="LogAutoConnectFailed" xml:space="preserve">
+    <value>自动连接失败，未找到保存的设备：输入='{0}', 输出='{1}'</value>
+  </data>
+  <data name="LogAutoConnectRetryIn" xml:space="preserve">
+    <value>将在 {0} 秒后进行第 1 次重试...</value>
+  </data>
+  <data name="LogAutoConnectCancelled" xml:space="preserve">
+    <value>用户已操作界面，自动连接重试已取消</value>
+  </data>
+  <data name="LogAutoConnectFailedAfterRetries" xml:space="preserve">
+    <value>自动连接失败，已重试 {0} 次，请手动连接设备</value>
+  </data>
+  <data name="LogAutoConnectRetryFailed" xml:space="preserve">
+    <value>第 {0} 次重试失败，将在 {1} 秒后进行第 {2} 次重试...</value>
+  </data>
+  <data name="LogDeviceNotFound" xml:space="preserve">
+    <value>无法找到设备ID: 输入设备='{0}', 输出设备='{1}'</value>
+  </data>
 </root>

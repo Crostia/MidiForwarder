@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace MidiForwarder
 {
-    public class ConfigManager
+    public partial class ConfigManager
     {
         private readonly string configFilePath;
         private AppConfig config = new();
@@ -78,7 +78,7 @@ namespace MidiForwarder
 
             try
             {
-                var match = System.Text.RegularExpressions.Regex.Match(deviceInfo, @"^\[(\d+)\]");
+                var match = MyRegex().Match(deviceInfo);
                 if (match.Success && int.TryParse(match.Groups[1].Value, out int id))
                 {
                     return id;
@@ -96,7 +96,7 @@ namespace MidiForwarder
 
             try
             {
-                var match = System.Text.RegularExpressions.Regex.Match(deviceInfo, @"^\[\d+\]\s*(.+)$");
+                var match = MyRegex1().Match(deviceInfo);
                 if (match.Success)
                 {
                     return match.Groups[1].Value.Trim();
@@ -149,5 +149,63 @@ namespace MidiForwarder
             SaveConfig();
         }
 
+        /// <summary>
+        /// 添加设备到有线设备排除名单（防重复）
+        /// </summary>
+        /// <param name="deviceName">设备名称</param>
+        /// <returns>是否成功添加（false表示已存在）</returns>
+        public bool AddToWiredDeviceExclusions(string deviceName)
+        {
+            if (string.IsNullOrWhiteSpace(deviceName)) return false;
+
+            // 获取纯设备名称（不含ID）
+            var pureName = ParseDeviceName(deviceName);
+            if (string.IsNullOrWhiteSpace(pureName)) return false;
+
+            // 检查是否已存在（不区分大小写）
+            if (config.WiredDeviceExclusions.Any(e =>
+                string.Equals(e, pureName, StringComparison.OrdinalIgnoreCase)))
+            {
+                return false; // 已存在
+            }
+
+            config.WiredDeviceExclusions.Add(pureName);
+            SaveConfig();
+            return true;
+        }
+
+        /// <summary>
+        /// 从有线设备排除名单中移除设备
+        /// </summary>
+        public bool RemoveFromWiredDeviceExclusions(string deviceName)
+        {
+            if (string.IsNullOrWhiteSpace(deviceName)) return false;
+
+            var pureName = ParseDeviceName(deviceName);
+            var existing = config.WiredDeviceExclusions.FirstOrDefault(e =>
+                string.Equals(e, pureName, StringComparison.OrdinalIgnoreCase));
+
+            if (existing != null)
+            {
+                config.WiredDeviceExclusions.Remove(existing);
+                SaveConfig();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 获取有线设备排除名单
+        /// </summary>
+        public List<string> GetWiredDeviceExclusions()
+        {
+            return [.. config.WiredDeviceExclusions];
+        }
+
+        [System.Text.RegularExpressions.GeneratedRegex(@"^\[(\d+)\]")]
+        private static partial System.Text.RegularExpressions.Regex MyRegex();
+        [System.Text.RegularExpressions.GeneratedRegex(@"^\[\d+\]\s*(.+)$")]
+        private static partial System.Text.RegularExpressions.Regex MyRegex1();
     }
 }

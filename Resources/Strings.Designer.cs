@@ -405,5 +405,203 @@ namespace MidiForwarder.Resources {
                 return ResourceManager.GetString("TrayTooltip", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 添加到蓝牙过滤排除名单.
+        /// </summary>
+        internal static string AddToExclusionList {
+            get {
+                return ResourceManager.GetString("AddToExclusionList", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 从蓝牙过滤排除名单中移除.
+        /// </summary>
+        internal static string RemoveFromExclusionList {
+            get {
+                return ResourceManager.GetString("RemoveFromExclusionList", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 已将 &apos;{0}&apos; 添加到蓝牙过滤排除名单.
+        /// </summary>
+        internal static string LogAddedToExclusionList {
+            get {
+                return ResourceManager.GetString("LogAddedToExclusionList", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 已将 &apos;{0}&apos; 从蓝牙过滤排除名单中移除.
+        /// </summary>
+        internal static string LogRemovedFromExclusionList {
+            get {
+                return ResourceManager.GetString("LogRemovedFromExclusionList", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 该设备将不再被识别为蓝牙设备.
+        /// </summary>
+        internal static string LogDeviceWillNotBeBluetooth {
+            get {
+                return ResourceManager.GetString("LogDeviceWillNotBeBluetooth", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 该设备将恢复蓝牙设备检测.
+        /// </summary>
+        internal static string LogDeviceWillResumeBluetooth {
+            get {
+                return ResourceManager.GetString("LogDeviceWillResumeBluetooth", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 检测到蓝牙MIDI设备.
+        /// </summary>
+        internal static string LogBluetoothMidiDetected {
+            get {
+                return ResourceManager.GetString("LogBluetoothMidiDetected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 注意：蓝牙设备可能出现驱动状态与实际连接状态不同步的情况.
+        /// </summary>
+        internal static string LogBluetoothNote {
+            get {
+                return ResourceManager.GetString("LogBluetoothNote", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 如果无法收发MIDI消息，请尝试：.
+        /// </summary>
+        internal static string LogBluetoothTryIfFail {
+            get {
+                return ResourceManager.GetString("LogBluetoothTryIfFail", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 1. 检查蓝牙设备是否真正连接.
+        /// </summary>
+        internal static string LogBluetoothTry1 {
+            get {
+                return ResourceManager.GetString("LogBluetoothTry1", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 2. 断开并重新连接设备.
+        /// </summary>
+        internal static string LogBluetoothTry2 {
+            get {
+                return ResourceManager.GetString("LogBluetoothTry2", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 3. 重启蓝牙设备或重新配对.
+        /// </summary>
+        internal static string LogBluetoothTry3 {
+            get {
+                return ResourceManager.GetString("LogBluetoothTry3", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 检测到的蓝牙输入设备: {0}.
+        /// </summary>
+        internal static string LogDetectedBluetoothInput {
+            get {
+                return ResourceManager.GetString("LogDetectedBluetoothInput", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 检测到的蓝牙输出设备: {0}.
+        /// </summary>
+        internal static string LogDetectedBluetoothOutput {
+            get {
+                return ResourceManager.GetString("LogDetectedBluetoothOutput", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 请先选择一个输入设备.
+        /// </summary>
+        internal static string LogSelectInputFirst {
+            get {
+                return ResourceManager.GetString("LogSelectInputFirst", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 请先选择一个输出设备.
+        /// </summary>
+        internal static string LogSelectOutputFirst {
+            get {
+                return ResourceManager.GetString("LogSelectOutputFirst", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 自动连接失败，未找到保存的设备：输入=&apos;{0}&apos;, 输出=&apos;{1}&apos;.
+        /// </summary>
+        internal static string LogAutoConnectFailed {
+            get {
+                return ResourceManager.GetString("LogAutoConnectFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 将在 {0} 秒后进行第 1 次重试....
+        /// </summary>
+        internal static string LogAutoConnectRetryIn {
+            get {
+                return ResourceManager.GetString("LogAutoConnectRetryIn", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 用户已操作界面，自动连接重试已取消.
+        /// </summary>
+        internal static string LogAutoConnectCancelled {
+            get {
+                return ResourceManager.GetString("LogAutoConnectCancelled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 自动连接失败，已重试 {0} 次，请手动连接设备.
+        /// </summary>
+        internal static string LogAutoConnectFailedAfterRetries {
+            get {
+                return ResourceManager.GetString("LogAutoConnectFailedAfterRetries", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 第 {0} 次重试失败，将在 {1} 秒后进行第 {2} 次重试....
+        /// </summary>
+        internal static string LogAutoConnectRetryFailed {
+            get {
+                return ResourceManager.GetString("LogAutoConnectRetryFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 无法找到设备ID: 输入设备=&apos;{0}&apos;, 输出设备=&apos;{1}&apos;.
+        /// </summary>
+        internal static string LogDeviceNotFound {
+            get {
+                return ResourceManager.GetString("LogDeviceNotFound", resourceCulture);
+            }
+        }
     }
 }

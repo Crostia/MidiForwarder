@@ -236,4 +236,73 @@ You can change this setting via the tray menu.</value>
   <data name="MsgDeviceRestored" xml:space="preserve">
     <value>Device restored, reconnected successfully</value>
   </data>
+  <data name="AddToExclusionList" xml:space="preserve">
+    <value>Add to Bluetooth Device Whitelist</value>
+  </data>
+  <data name="RemoveFromExclusionList" xml:space="preserve">
+    <value>Remove from Bluetooth Device Whitelist</value>
+  </data>
+  <!-- Bluetooth Filter Log Messages -->
+  <data name="LogAddedToExclusionList" xml:space="preserve">
+    <value>Added '{0}' to Bluetooth device whitelist</value>
+  </data>
+  <data name="LogRemovedFromExclusionList" xml:space="preserve">
+    <value>Removed '{0}' from Bluetooth device whitelist</value>
+  </data>
+  <data name="LogDeviceWillNotBeBluetooth" xml:space="preserve">
+    <value>This device will no longer be recognized as a Bluetooth device</value>
+  </data>
+  <data name="LogDeviceWillResumeBluetooth" xml:space="preserve">
+    <value>This device will resume Bluetooth device detection</value>
+  </data>
+  <!-- Bluetooth Detection Log Messages -->
+  <data name="LogBluetoothMidiDetected" xml:space="preserve">
+    <value>Bluetooth MIDI device detected</value>
+  </data>
+  <data name="LogBluetoothNote" xml:space="preserve">
+    <value>Note: Bluetooth devices may have driver status out of sync with actual connection status</value>
+  </data>
+  <data name="LogBluetoothTryIfFail" xml:space="preserve">
+    <value>If unable to send/receive MIDI messages, please try:</value>
+  </data>
+  <data name="LogBluetoothTry1" xml:space="preserve">
+    <value>1. Check if the Bluetooth device is actually connected</value>
+  </data>
+  <data name="LogBluetoothTry2" xml:space="preserve">
+    <value>2. Disconnect and reconnect the device</value>
+  </data>
+  <data name="LogBluetoothTry3" xml:space="preserve">
+    <value>3. Restart the Bluetooth device or re-pair</value>
+  </data>
+  <data name="LogDetectedBluetoothInput" xml:space="preserve">
+    <value>Detected Bluetooth input device: {0}</value>
+  </data>
+  <data name="LogDetectedBluetoothOutput" xml:space="preserve">
+    <value>Detected Bluetooth output device: {0}</value>
+  </data>
+  <!-- Auto Connect Log Messages -->
+  <data name="LogSelectInputFirst" xml:space="preserve">
+    <value>Please select an input device first</value>
+  </data>
+  <data name="LogSelectOutputFirst" xml:space="preserve">
+    <value>Please select an output device first</value>
+  </data>
+  <data name="LogAutoConnectFailed" xml:space="preserve">
+    <value>Auto-connect failed, saved devices not found: input='{0}', output='{1}'</value>
+  </data>
+  <data name="LogAutoConnectRetryIn" xml:space="preserve">
+    <value>Will retry for the 1st time in {0} seconds...</value>
+  </data>
+  <data name="LogAutoConnectCancelled" xml:space="preserve">
+    <value>User has operated the interface, auto-connect retry cancelled</value>
+  </data>
+  <data name="LogAutoConnectFailedAfterRetries" xml:space="preserve">
+    <value>Auto-connect failed after {0} retries, please connect device manually</value>
+  </data>
+  <data name="LogAutoConnectRetryFailed" xml:space="preserve">
+    <value>Retry {0} failed, will retry for the {2} time in {1} seconds...</value>
+  </data>
+  <data name="LogDeviceNotFound" xml:space="preserve">
+    <value>Cannot find device ID: input device='{0}', output device='{1}'</value>
+  </data>
 </root>

@@ -28,6 +28,7 @@ namespace MidiForwarder
         public event EventHandler<bool>? AutoCheckUpdateChanged;
 
         private string currentLanguage = "";
+        private bool minimizeToTrayOnClose = true;
 
         public static bool IsAutoBootEnabled
         {
@@ -51,6 +52,7 @@ namespace MidiForwarder
         public TrayManager(bool minimizeToTrayOnClose, string language, bool autoCheckUpdate = true)
         {
             currentLanguage = language;
+            this.minimizeToTrayOnClose = minimizeToTrayOnClose;
             InitializeTrayIcon(minimizeToTrayOnClose, autoCheckUpdate);
             LocalizationManager.LanguageChanged += (s, e) => UpdateLocalizedText();
         }
@@ -111,6 +113,13 @@ namespace MidiForwarder
                 Visible = true
             };
 
+            notifyIcon.MouseClick += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    ShowWindowRequested?.Invoke(this, EventArgs.Empty);
+                }
+            };
             notifyIcon.DoubleClick += (s, e) => ShowWindowRequested?.Invoke(this, EventArgs.Empty);
         }
 
@@ -165,6 +174,7 @@ namespace MidiForwarder
 
         public void UpdateMinimizeToTrayOnCloseCheck(bool minimizeToTrayOnClose)
         {
+            this.minimizeToTrayOnClose = minimizeToTrayOnClose;
             if (minimizeToTrayItem != null)
             {
                 minimizeToTrayItem.Checked = minimizeToTrayOnClose;
@@ -175,7 +185,7 @@ namespace MidiForwarder
         {
             bool currentState = IsAutoBootEnabled;
             bool newState = !currentState;
-            SetAutoBoot(newState);
+            SetAutoBoot(newState, minimizeToTrayOnClose);
 
             if (autoBootItem != null)
             {
@@ -190,7 +200,14 @@ namespace MidiForwarder
             if (minimizeToTrayItem != null)
             {
                 minimizeToTrayItem.Checked = !minimizeToTrayItem.Checked;
+                minimizeToTrayOnClose = minimizeToTrayItem.Checked;
                 MinimizeToTrayOnCloseChanged?.Invoke(this, minimizeToTrayItem.Checked);
+
+                // 如果开机自启动已启用，更新注册表以反映新的 --tray 设置
+                if (IsAutoBootEnabled)
+                {
+                    SetAutoBoot(true, minimizeToTrayOnClose);
+                }
             }
         }
 
@@ -211,7 +228,7 @@ namespace MidiForwarder
             }
         }
 
-        private static void SetAutoBoot(bool enable)
+        private static void SetAutoBoot(bool enable, bool minimizeToTrayOnClose)
         {
             try
             {
@@ -222,8 +239,9 @@ namespace MidiForwarder
                     if (enable)
                     {
                         var exePath = Application.ExecutablePath;
-                        // 添加 --autoboot 参数，用于区分开机自启动和手动启动
-                        key.SetValue("MidiForwarder", $"\"{exePath}\" --autoboot");
+                        // 根据"关闭时最小化到托盘"设置决定是否添加 --tray 和 --hidden 参数
+                        var trayArg = minimizeToTrayOnClose ? " --tray --hidden" : "";
+                        key.SetValue("MidiForwarder", $"\"{exePath}\" --autoboot{trayArg}");
                     }
                     else
                     {

@@ -6,6 +6,7 @@ namespace MidiForwarder
     {
         public int Id { get; set; }
         public string Name { get; set; } = "";
+        public bool IsBluetooth { get; set; }
     }
 
     public class MidiMessageEventArgs : EventArgs
@@ -18,21 +19,13 @@ namespace MidiForwarder
         public DateTime Timestamp { get; set; }
     }
 
-    public class MidiManager : IDisposable
+    public class MidiManager(ConfigManager? configManager = null) : IDisposable
     {
         private MidiIn? midiInputDevice;
         private MidiOut? midiOutputDevice;
         private int selectedInputDeviceId = -1;
         private int selectedOutputDeviceId = -1;
-
-        // 心跳检测和自动重连
-        private System.Threading.Timer? heartbeatTimer;
-        private const int HeartbeatIntervalMs = 3000; // 每3秒检测一次
-        private const int MaxReconnectAttempts = 5;
-        private int reconnectAttemptCount = 0;
-        private bool isReconnecting = false;
-        private DateTime lastMessageTime = DateTime.Now;
-        private const int MessageTimeoutMs = 10000; // 10秒无消息认为设备无响应
+        private readonly ConfigManager? configManager = configManager;
 
         public bool IsConnected => midiInputDevice != null && midiOutputDevice != null;
         public int SelectedInputDeviceId => selectedInputDeviceId;
@@ -42,240 +35,268 @@ namespace MidiForwarder
         public event EventHandler<string>? ErrorOccurred;
         public event EventHandler? Connected;
         public event EventHandler? Disconnected;
-        public event EventHandler? DeviceLost; // 设备丢失事件
-        public event EventHandler? DeviceRestored; // 设备恢复事件
 
-        public static List<MidiDeviceInfo> GetInputDevices()
+        // 蓝牙设备关键词列表 - 这些词明确表明是蓝牙设备
+        private static readonly string[] BluetoothKeywords =
+        [
+            "bluetooth", "无线", "wireless",
+            "蓝牙", "btooth", "btmidi", "midi bt"
+        ];
+
+        /// <summary>
+        /// 检查设备是否为蓝牙设备
+        /// </summary>
+        public static bool IsBluetoothDevice(string deviceName, List<string>? exclusions = null)
+        {
+            if (string.IsNullOrEmpty(deviceName)) return false;
+
+            // 先检查是否在排除名单中
+            if (exclusions != null && exclusions.Any(exclusion =>
+                deviceName.Contains(exclusion, StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            // 检查明确的蓝牙关键词
+            if (BluetoothKeywords.Any(keyword =>
+                deviceName.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            // 检查 "ble" 模式 - 需要是独立的词或带有连字符
+            // 例如: "BLE MIDI", "BLE-MIDI", "MIDI BLE", "MIDI-BLE" 是蓝牙
+            // 但 "Wavetable", "Cable" 中的 "ble" 不是
+            if (IsBluetoothBlePattern(deviceName))
+            {
+                return true;
+            }
+
+            // 检查 "bt" 模式 - 需要是独立的词或带有连字符
+            // 例如: "BT MIDI", "BT-MIDI", "MIDI BT", "MIDI-BT" 是蓝牙
+            if (IsBluetoothBtPattern(deviceName))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 检查是否为蓝牙BLE模式（避免匹配到Wavetable等词中的ble）
+        /// </summary>
+        private static bool IsBluetoothBlePattern(string deviceName)
+        {
+            // 查找 "ble" 的位置（不区分大小写）
+            int index = deviceName.IndexOf("ble", StringComparison.OrdinalIgnoreCase);
+            while (index != -1)
+            {
+                // 检查 "ble" 前后是否有蓝牙特征
+                // 前导字符：空格、连字符、字符串开始
+                // 后随字符：空格、连字符、字符串结束、数字
+                bool validPrefix = index == 0 ||
+                    deviceName[index - 1] == ' ' ||
+                    deviceName[index - 1] == '-';
+
+                bool validSuffix = index + 3 >= deviceName.Length ||
+                    deviceName[index + 3] == ' ' ||
+                    deviceName[index + 3] == '-' ||
+                    char.IsDigit(deviceName[index + 3]);
+
+                // 如果前后都是有效的分隔符，则是蓝牙BLE
+                if (validPrefix && validSuffix)
+                {
+                    return true;
+                }
+
+                // 继续查找下一个 "ble"
+                index = deviceName.IndexOf("ble", index + 1, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 检查是否为蓝牙BT模式
+        /// </summary>
+        private static bool IsBluetoothBtPattern(string deviceName)
+        {
+            // 查找 " bt" 或 "bt " 或 "-bt" 或 "bt-" 模式（不区分大小写）
+            string[] btPatterns = [" bt ", " bt-", "-bt ", "-bt-", " bt", "bt "];
+            foreach (var pattern in btPatterns)
+            {
+                if (deviceName.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            // 检查字符串开头或结尾的 "bt"（不区分大小写）
+            if (deviceName.StartsWith("bt ", StringComparison.OrdinalIgnoreCase) ||
+                deviceName.StartsWith("bt-", StringComparison.OrdinalIgnoreCase) ||
+                deviceName.EndsWith(" bt", StringComparison.OrdinalIgnoreCase) ||
+                deviceName.EndsWith("-bt", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 获取输入设备列表（使用配置的排除名单）
+        /// </summary>
+        public List<MidiDeviceInfo> GetInputDevices()
+        {
+            var exclusions = configManager?.GetWiredDeviceExclusions();
+            return GetInputDevices(exclusions);
+        }
+
+        /// <summary>
+        /// 获取输入设备列表（静态版本，可传入排除名单）
+        /// </summary>
+        public static List<MidiDeviceInfo> GetInputDevices(List<string>? exclusions = null)
         {
             var devices = new List<MidiDeviceInfo>();
             for (int i = 0; i < MidiIn.NumberOfDevices; i++)
             {
                 var deviceInfo = MidiIn.DeviceInfo(i);
-                devices.Add(new MidiDeviceInfo { Id = i, Name = $"[{i}] {deviceInfo.ProductName}" });
+                var name = $"[{i}] {deviceInfo.ProductName}";
+                devices.Add(new MidiDeviceInfo
+                {
+                    Id = i,
+                    Name = name,
+                    IsBluetooth = IsBluetoothDevice(deviceInfo.ProductName, exclusions)
+                });
             }
             return devices;
         }
 
-        public static List<MidiDeviceInfo> GetOutputDevices()
+        /// <summary>
+        /// 获取输出设备列表（使用配置的排除名单）
+        /// </summary>
+        public List<MidiDeviceInfo> GetOutputDevices()
+        {
+            var exclusions = configManager?.GetWiredDeviceExclusions();
+            return GetOutputDevices(exclusions);
+        }
+
+        /// <summary>
+        /// 获取输出设备列表（静态版本，可传入排除名单）
+        /// </summary>
+        public static List<MidiDeviceInfo> GetOutputDevices(List<string>? exclusions = null)
         {
             var devices = new List<MidiDeviceInfo>();
             for (int i = 0; i < MidiOut.NumberOfDevices; i++)
             {
                 var deviceInfo = MidiOut.DeviceInfo(i);
-                devices.Add(new MidiDeviceInfo { Id = i, Name = $"[{i}] {deviceInfo.ProductName}" });
+                var name = $"[{i}] {deviceInfo.ProductName}";
+                devices.Add(new MidiDeviceInfo
+                {
+                    Id = i,
+                    Name = name,
+                    IsBluetooth = IsBluetoothDevice(deviceInfo.ProductName, exclusions)
+                });
             }
             return devices;
         }
 
         public bool Connect(int inputDeviceId, int outputDeviceId)
         {
+            Logger.Info($"MidiManager.Connect: 开始连接设备 - 输入ID={inputDeviceId}, 输出ID={outputDeviceId}");
+
             try
             {
+                Logger.Info("MidiManager.Connect: 断开现有连接");
                 Disconnect();
 
                 selectedInputDeviceId = inputDeviceId;
                 selectedOutputDeviceId = outputDeviceId;
 
+                // 获取设备名称用于日志
+                string inputDeviceName = "Unknown";
+                string outputDeviceName = "Unknown";
+                bool isInputBluetooth = false;
+                bool isOutputBluetooth = false;
+
+                var exclusions = configManager?.GetWiredDeviceExclusions();
+
+                try
+                {
+                    if (inputDeviceId >= 0 && inputDeviceId < MidiIn.NumberOfDevices)
+                    {
+                        inputDeviceName = MidiIn.DeviceInfo(inputDeviceId).ProductName;
+                        isInputBluetooth = IsBluetoothDevice(inputDeviceName, exclusions);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Info($"MidiManager.Connect: 获取输入设备名称失败 - {ex.Message}");
+                }
+
+                try
+                {
+                    if (outputDeviceId >= 0 && outputDeviceId < MidiOut.NumberOfDevices)
+                    {
+                        outputDeviceName = MidiOut.DeviceInfo(outputDeviceId).ProductName;
+                        isOutputBluetooth = IsBluetoothDevice(outputDeviceName, exclusions);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Info($"MidiManager.Connect: 获取输出设备名称失败 - {ex.Message}");
+                }
+
+                Logger.Info($"MidiManager.Connect: 输入设备='{inputDeviceName}', 输出设备='{outputDeviceName}'");
+
+                // 蓝牙设备警告提示
+                if (isInputBluetooth || isOutputBluetooth)
+                {
+                    AppLog.Info("=== " + LocalizationManager.GetString("LogBluetoothMidiDetected") + " ===");
+                    AppLog.Info(LocalizationManager.GetString("LogBluetoothNote"));
+                    AppLog.Info(LocalizationManager.GetString("LogBluetoothTryIfFail"));
+                    AppLog.Info("  " + LocalizationManager.GetString("LogBluetoothTry1"));
+                    AppLog.Info("  " + LocalizationManager.GetString("LogBluetoothTry2"));
+                    AppLog.Info("  " + LocalizationManager.GetString("LogBluetoothTry3"));
+                    if (isInputBluetooth)
+                        AppLog.Info(string.Format(LocalizationManager.GetString("LogDetectedBluetoothInput"), inputDeviceName));
+                    if (isOutputBluetooth)
+                        AppLog.Info(string.Format(LocalizationManager.GetString("LogDetectedBluetoothOutput"), outputDeviceName));
+                }
+
+                Logger.Info("MidiManager.Connect: 创建MidiIn实例");
                 midiInputDevice = new MidiIn(selectedInputDeviceId);
                 midiInputDevice.MessageReceived += OnMidiMessageReceived;
+
+                Logger.Info("MidiManager.Connect: 启动MidiIn");
                 midiInputDevice.Start();
 
+                Logger.Info("MidiManager.Connect: 创建MidiOut实例");
                 midiOutputDevice = new MidiOut(selectedOutputDeviceId);
 
-                // 重置重连计数和消息时间
-                reconnectAttemptCount = 0;
-                isReconnecting = false;
-                lastMessageTime = DateTime.Now;
-
-                // 启动心跳检测
-                StartHeartbeatTimer();
-
+                Logger.Info("MidiManager.Connect: 连接成功");
                 Connected?.Invoke(this, EventArgs.Empty);
                 return true;
             }
             catch (Exception ex)
             {
+                Logger.Error($"MidiManager.Connect: 连接失败 - {ex.Message}", ex);
                 ErrorOccurred?.Invoke(this, $"连接错误: {ex.Message}");
                 Disconnect();
                 return false;
             }
         }
 
-        private void StartHeartbeatTimer()
+        public void Disconnect()
         {
-            StopHeartbeatTimer();
-            heartbeatTimer = new System.Threading.Timer(
-                HeartbeatCallback,
-                null,
-                HeartbeatIntervalMs,
-                HeartbeatIntervalMs);
-        }
-
-        private void StopHeartbeatTimer()
-        {
-            heartbeatTimer?.Change(Timeout.Infinite, Timeout.Infinite);
-            heartbeatTimer?.Dispose();
-            heartbeatTimer = null;
-        }
-
-        private void HeartbeatCallback(object? state)
-        {
+            Logger.Info($"MidiManager.Disconnect: 开始断开连接 - 当前连接状态={IsConnected}");
             try
             {
-                if (!IsConnected || isReconnecting) return;
+                bool wasConnected = IsConnected;
 
-                // 检查设备是否仍然可用
-                if (!CheckDeviceAvailability())
-                {
-                    // 设备不可用，触发丢失事件并尝试重连
-                    DeviceLost?.Invoke(this, EventArgs.Empty);
-                    _ = Task.Run(TryReconnectAsync);
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorOccurred?.Invoke(this, $"心跳检测错误: {ex.Message}");
-            }
-        }
-
-        private bool CheckDeviceAvailability()
-        {
-            try
-            {
-                // 检查输入设备是否仍然存在于设备列表中
-                bool inputDeviceExists = false;
-                bool outputDeviceExists = false;
-
-                for (int i = 0; i < MidiIn.NumberOfDevices; i++)
-                {
-                    if (i == selectedInputDeviceId)
-                    {
-                        inputDeviceExists = true;
-                        break;
-                    }
-                }
-
-                for (int i = 0; i < MidiOut.NumberOfDevices; i++)
-                {
-                    if (i == selectedOutputDeviceId)
-                    {
-                        outputDeviceExists = true;
-                        break;
-                    }
-                }
-
-                // 如果设备不存在于列表中，说明设备已断开
-                if (!inputDeviceExists || !outputDeviceExists)
-                {
-                    return false;
-                }
-
-                // 检查是否长时间没有收到消息（可能设备无响应）
-                var timeSinceLastMessage = DateTime.Now - lastMessageTime;
-                if (timeSinceLastMessage.TotalMilliseconds > MessageTimeoutMs)
-                {
-                    // 尝试发送一个测试消息来验证设备是否响应
-                    try
-                    {
-                        midiOutputDevice?.Send(0xFE); // 发送 Active Sensing 消息
-                    }
-                    catch
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private async Task TryReconnectAsync()
-        {
-            if (isReconnecting) return;
-            isReconnecting = true;
-
-            try
-            {
-                // 先断开当前连接
-                await Task.Run(() => DisconnectInternal());
-
-                // 等待设备重新出现
-                bool deviceRestored = false;
-                for (int attempt = 0; attempt < MaxReconnectAttempts; attempt++)
-                {
-                    await Task.Delay(1000); // 等待1秒
-
-                    // 检查设备是否重新出现
-                    bool inputDeviceExists = false;
-                    bool outputDeviceExists = false;
-
-                    for (int i = 0; i < MidiIn.NumberOfDevices; i++)
-                    {
-                        if (i == selectedInputDeviceId)
-                        {
-                            inputDeviceExists = true;
-                            break;
-                        }
-                    }
-
-                    for (int i = 0; i < MidiOut.NumberOfDevices; i++)
-                    {
-                        if (i == selectedOutputDeviceId)
-                        {
-                            outputDeviceExists = true;
-                            break;
-                        }
-                    }
-
-                    if (inputDeviceExists && outputDeviceExists)
-                    {
-                        deviceRestored = true;
-                        break;
-                    }
-                }
-
-                if (deviceRestored)
-                {
-                    // 尝试重新连接
-                    if (Connect(selectedInputDeviceId, selectedOutputDeviceId))
-                    {
-                        reconnectAttemptCount = 0;
-                        DeviceRestored?.Invoke(this, EventArgs.Empty);
-                    }
-                    else
-                    {
-                        reconnectAttemptCount++;
-                        if (reconnectAttemptCount >= MaxReconnectAttempts)
-                        {
-                            ErrorOccurred?.Invoke(this, "设备重连失败，已达到最大重试次数");
-                        }
-                    }
-                }
-                else
-                {
-                    ErrorOccurred?.Invoke(this, "设备未重新出现，请检查设备连接");
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorOccurred?.Invoke(this, $"重连错误: {ex.Message}");
-            }
-            finally
-            {
-                isReconnecting = false;
-            }
-        }
-
-        private void DisconnectInternal()
-        {
-            try
-            {
                 if (midiInputDevice != null)
                 {
+                    Logger.Info("MidiManager.Disconnect: 停止MidiIn");
                     try
                     {
                         midiInputDevice.Stop();
@@ -284,39 +305,32 @@ namespace MidiForwarder
                     midiInputDevice.MessageReceived -= OnMidiMessageReceived;
                     midiInputDevice.Dispose();
                     midiInputDevice = null;
+                    Logger.Info("MidiManager.Disconnect: MidiIn已释放");
                 }
 
                 if (midiOutputDevice != null)
                 {
+                    Logger.Info("MidiManager.Disconnect: 释放MidiOut");
                     try
                     {
                         midiOutputDevice.Dispose();
                     }
                     catch { }
                     midiOutputDevice = null;
+                    Logger.Info("MidiManager.Disconnect: MidiOut已释放");
                 }
-            }
-            catch { }
-        }
-
-        public void Disconnect()
-        {
-            try
-            {
-                bool wasConnected = IsConnected;
-
-                // 停止心跳检测
-                StopHeartbeatTimer();
-
-                DisconnectInternal();
 
                 if (wasConnected)
                 {
+                    Logger.Info("MidiManager.Disconnect: 触发Disconnected事件");
                     Disconnected?.Invoke(this, EventArgs.Empty);
                 }
+
+                Logger.Info("MidiManager.Disconnect: 断开连接完成");
             }
             catch (Exception ex)
             {
+                Logger.Error($"MidiManager.Disconnect: 断开连接错误 - {ex.Message}", ex);
                 ErrorOccurred?.Invoke(this, $"断开连接错误: {ex.Message}");
             }
         }
@@ -325,9 +339,6 @@ namespace MidiForwarder
         {
             try
             {
-                // 更新最后消息时间
-                lastMessageTime = DateTime.Now;
-
                 midiOutputDevice?.Send(e.RawMessage);
 
                 var messageArgs = ParseMidiMessage(e.RawMessage);
@@ -370,7 +381,6 @@ namespace MidiForwarder
 
         public void Dispose()
         {
-            StopHeartbeatTimer();
             Disconnect();
             GC.SuppressFinalize(this);
         }

@@ -5,7 +5,6 @@ namespace MidiForwarder
         private readonly string currentVersion;
         private readonly string latestVersion;
         private readonly string releaseNotes;
-        private readonly string downloadUrl;
 
         // 控件引用，用于语言切换时更新文本
         private Label? versionLabel;
@@ -17,12 +16,11 @@ namespace MidiForwarder
         public bool ShouldOpenDownloadPage { get; private set; } = false;
         public bool ShouldIgnoreThisVersion { get; private set; } = false;
 
-        public UpdateDialog(string currentVersion, string latestVersion, string releaseNotes, string downloadUrl)
+        public UpdateDialog(string currentVersion, string latestVersion, string releaseNotes)
         {
             this.currentVersion = currentVersion;
             this.latestVersion = latestVersion;
             this.releaseNotes = releaseNotes;
-            this.downloadUrl = downloadUrl;
 
             // 订阅语言切换事件
             LocalizationManager.LanguageChanged += OnLanguageChanged;
@@ -183,9 +181,9 @@ namespace MidiForwarder
             base.OnFormClosed(e);
         }
 
-        public static (bool shouldDownload, bool shouldIgnore) ShowUpdateDialog(string currentVersion, string latestVersion, string releaseNotes, string downloadUrl)
+        public static (bool shouldDownload, bool shouldIgnore) ShowUpdateDialog(string currentVersion, string latestVersion, string releaseNotes)
         {
-            using var dialog = new UpdateDialog(currentVersion, latestVersion, releaseNotes, downloadUrl);
+            using var dialog = new UpdateDialog(currentVersion, latestVersion, releaseNotes);
             dialog.ShowDialog();
             return (dialog.ShouldOpenDownloadPage, dialog.ShouldIgnoreThisVersion);
         }

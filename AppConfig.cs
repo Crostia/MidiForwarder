@@ -20,8 +20,7 @@ namespace MidiForwarder
         // 自动连接重试间隔（秒），默认30秒
         public int AutoConnectRetryIntervalSeconds { get; set; } = 30;
 
-        // 内部计算属性：开机启动时是否最小化
-        // 只有当 AutoBoot 和 MinimizeToTrayOnClose 都为 true 时才最小化
-        public bool StartMinimizedOnAutoStart => AutoBoot && MinimizeToTrayOnClose;
+        // 有线设备排除名单（用于过滤误识别的蓝牙设备）
+        public List<string> WiredDeviceExclusions { get; set; } = [];
     }
 }
