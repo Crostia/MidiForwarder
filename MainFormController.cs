@@ -10,12 +10,13 @@ namespace MidiForwarder
         #region 字段和常量
         // 管理器实例
         private readonly ConfigManager configManager;
-        private MidiManager? midiManager;
+        private IMidiManager? midiManager;
         private TrayManager? trayManager;
         private MainFormLayout? layout;
         private UpdateManager? updateManager;
         private DeviceCacheManager? deviceCacheManager;
         private Form? mainForm;
+        private MidiApiType currentApiType;
 
         // 启动参数
         private readonly bool isAutoStart;
@@ -31,10 +32,8 @@ namespace MidiForwarder
         private bool isUserInteracted = false;
         private bool isExitFromTray = false;
         private int autoConnectRetryCount = 0;
-        private CancellationTokenSource? delayCancellationTokenSource;
 
         // 常量
-        private const int AutoBootDelayMinutes = 3;
         private const int MaxAutoConnectRetries = 3;
         #endregion
 
@@ -58,22 +57,6 @@ namespace MidiForwarder
         #endregion
 
         #region 初始化
-        /// <summary>
-        /// 执行延迟初始化（开机自启动时使用）
-        /// </summary>
-        public static async Task InitializeDelayedAsync(Action onInitializeComplete, CancellationToken cancellationToken)
-        {
-            try
-            {
-                await Task.Delay(AutoBootDelayMinutes * 60 * 1000, cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                // 延迟被取消，立即执行初始化
-            }
-            onInitializeComplete();
-        }
-
         /// <summary>
         /// 初始化主窗体
         /// </summary>
@@ -108,9 +91,9 @@ namespace MidiForwarder
         }
 
         /// <summary>
-        /// 提前初始化托盘图标（在延迟等待期间显示）
+        /// 初始化托盘图标
         /// </summary>
-        public void InitializeTrayIconEarly()
+        public void InitializeTrayIcon()
         {
             trayManager = new TrayManager(
                 configManager.Config.MinimizeToTrayOnClose,
@@ -121,14 +104,7 @@ namespace MidiForwarder
 
             trayManager.ShowWindowRequested += (s, e) =>
             {
-                if (!isInitialized)
-                {
-                    delayCancellationTokenSource?.Cancel();
-                }
-                else
-                {
-                    RequestShowWindow?.Invoke(this, EventArgs.Empty);
-                }
+                RequestShowWindow?.Invoke(this, EventArgs.Empty);
             };
 
             trayManager.ExitRequested += (s, e) =>
@@ -143,7 +119,11 @@ namespace MidiForwarder
         /// </summary>
         private void InitializeComponents(Form form)
         {
-            midiManager = new MidiManager(configManager);
+            // 使用工厂创建 MIDI 管理器，自动检测并使用最佳可用 API
+            midiManager = MidiApiFactory.CreateMidiManagerWithFallback(configManager);
+            currentApiType = midiManager is Midi20Manager ? MidiApiType.Midi20 : MidiApiType.Midi10;
+            AppLog.Info($"使用 MIDI API: {(currentApiType == MidiApiType.Midi20 ? "Windows MIDI Services 2.0" : "MIDI 1.0 (NAudio)")}");
+
             layout = new MainFormLayout(form);
             deviceCacheManager = new DeviceCacheManager();
 
@@ -397,23 +377,9 @@ namespace MidiForwarder
         }
 
         /// <summary>
-        /// 获取是否应该提前初始化托盘
+        /// 获取是否应该初始化托盘
         /// </summary>
-        public bool ShouldInitializeTrayEarly => startHidden || (isAutoStart && startInTray);
-
-        /// <summary>
-        /// 获取是否需要延迟初始化
-        /// </summary>
-        public bool ShouldDelayInitialization => isAutoStart;
-
-        /// <summary>
-        /// 获取延迟初始化的CancellationTokenSource
-        /// </summary>
-        public CancellationTokenSource GetDelayCancellationTokenSource()
-        {
-            delayCancellationTokenSource = new CancellationTokenSource();
-            return delayCancellationTokenSource;
-        }
+        public bool ShouldInitializeTray => startHidden || (isAutoStart && startInTray);
         #endregion
 
         #region 设备刷新处理
@@ -632,16 +598,16 @@ namespace MidiForwarder
             if (string.IsNullOrEmpty(inputName) || string.IsNullOrEmpty(outputName)) return;
 
             // 从缓存查找真实的设备ID
-            int? inputId = deviceCacheManager.FindInputDeviceIdByName(inputName);
-            int? outputId = deviceCacheManager.FindOutputDeviceIdByName(outputName);
+            string? inputId = deviceCacheManager.FindInputDeviceIdByName(inputName);
+            string? outputId = deviceCacheManager.FindOutputDeviceIdByName(outputName);
 
-            if (!inputId.HasValue || !outputId.HasValue)
+            if (string.IsNullOrEmpty(inputId) || string.IsNullOrEmpty(outputId))
             {
                 AppLog.Error(string.Format(LocalizationManager.GetString("LogDeviceNotFound"), inputName, outputName));
                 return;
             }
 
-            midiManager.Connect(inputId.Value, outputId.Value);
+            midiManager.Connect(inputId, outputId);
         }
 
         private void DisconnectDevices()
@@ -732,8 +698,8 @@ namespace MidiForwarder
             var savedInputDevice = configManager.Config.SelectedInputDevice;
             var savedOutputDevice = configManager.Config.SelectedOutputDevice;
 
-            int? matchedInputId = null;
-            int? matchedOutputId = null;
+            string? matchedInputId = null;
+            string? matchedOutputId = null;
 
             if (!string.IsNullOrEmpty(savedInputDevice))
             {
@@ -747,18 +713,18 @@ namespace MidiForwarder
                 if (matchedOutput != null) matchedOutputId = matchedOutput.Id;
             }
 
-            if (matchedInputId.HasValue && matchedOutputId.HasValue)
+            if (!string.IsNullOrEmpty(matchedInputId) && !string.IsNullOrEmpty(matchedOutputId))
             {
                 // 自动连接：先更新UI选中项，再连接
-                SelectDevicesById(matchedInputId.Value, matchedOutputId.Value, inputDevices, outputDevices);
-                midiManager?.Connect(matchedInputId.Value, matchedOutputId.Value);
+                SelectDevicesById(matchedInputId, matchedOutputId, inputDevices, outputDevices);
+                midiManager?.Connect(matchedInputId, matchedOutputId);
                 return true;
             }
 
             return false;
         }
 
-        private void SelectDevicesById(int inputId, int outputId, List<MidiDeviceInfo> inputDevices, List<MidiDeviceInfo> outputDevices)
+        private void SelectDevicesById(string inputId, string outputId, List<MidiDeviceInfo> inputDevices, List<MidiDeviceInfo> outputDevices)
         {
             var inputIndex = inputDevices.FindIndex(d => d.Id == inputId);
             var outputIndex = outputDevices.FindIndex(d => d.Id == outputId);

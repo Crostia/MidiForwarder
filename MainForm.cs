@@ -18,22 +18,14 @@ namespace MidiForwarder
             // 应用启动时的窗口状态设置
             controller.ApplyStartupWindowState(this);
 
-            // 如果需要提前初始化托盘图标
-            if (controller.ShouldInitializeTrayEarly)
+            // 如果需要初始化托盘图标
+            if (controller.ShouldInitializeTray)
             {
-                controller.InitializeTrayIconEarly();
+                controller.InitializeTrayIcon();
             }
 
-            // 判断是否需要延迟初始化
-            if (controller.ShouldDelayInitialization)
-            {
-                var cts = controller.GetDelayCancellationTokenSource();
-                _ = MainFormController.InitializeDelayedAsync(() => InitializeOnUIThread(), cts.Token);
-            }
-            else
-            {
-                InitializeOnUIThread();
-            }
+            // 初始化UI
+            InitializeOnUIThread();
         }
 
         /// <summary>

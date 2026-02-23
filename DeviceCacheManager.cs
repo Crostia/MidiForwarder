@@ -2,7 +2,7 @@ namespace MidiForwarder
 {
     /// <summary>
     /// 设备缓存管理类 - 统一管理MIDI设备列表缓存
-    /// 提供手动刷新和自动刷新两种方案，通过事件通知其他组件
+    /// 支持 MIDI 1.0 和 MIDI 2.0 API，通过事件通知其他组件
     /// </summary>
     public class DeviceCacheManager : IDisposable
     {
@@ -17,11 +17,17 @@ namespace MidiForwarder
 
         // 状态标记
         private bool isDisposed = false;
+        private MidiApiType currentApiType;
 
         /// <summary>
         /// 设备列表变更事件（输入或输出设备有变更时触发）
         /// </summary>
         public event EventHandler? DevicesChanged;
+
+        /// <summary>
+        /// 当前使用的 MIDI API 类型
+        /// </summary>
+        public MidiApiType CurrentApiType => currentApiType;
 
         /// <summary>
         /// 当前缓存的输入设备列表（只读副本）
@@ -49,6 +55,13 @@ namespace MidiForwarder
                     return cachedOutputDevices.AsReadOnly();
                 }
             }
+        }
+
+        public DeviceCacheManager()
+        {
+            // 检测当前可用的 MIDI API
+            currentApiType = MidiApiFactory.IsMidi20Available ? MidiApiType.Midi20 : MidiApiType.Midi10;
+            Logger.Info($"DeviceCacheManager: 使用 {(currentApiType == MidiApiType.Midi20 ? "MIDI 2.0" : "MIDI 1.0")} API 获取设备列表");
         }
 
         /// <summary>
@@ -101,9 +114,8 @@ namespace MidiForwarder
         {
             Logger.Info("DeviceCacheManager: 执行手动刷新");
 
-            // 获取最新设备列表
-            var newInputDevices = MidiManager.GetInputDevices();
-            var newOutputDevices = MidiManager.GetOutputDevices();
+            // 根据当前 API 类型获取设备列表
+            var (newInputDevices, newOutputDevices) = GetDevicesFromCurrentApi();
 
             // 更新缓存
             lock (cacheLock)
@@ -118,6 +130,34 @@ namespace MidiForwarder
         }
 
         /// <summary>
+        /// 根据当前 API 类型获取设备列表
+        /// </summary>
+        private (List<MidiDeviceInfo> inputDevices, List<MidiDeviceInfo> outputDevices) GetDevicesFromCurrentApi()
+        {
+            try
+            {
+                if (currentApiType == MidiApiType.Midi20 && MidiApiFactory.IsMidi20Available)
+                {
+#if WINDOWS_MIDI_SERVICES
+                    var inputDevices = Midi20Manager.GetInputDevices();
+                    var outputDevices = Midi20Manager.GetOutputDevices();
+                    return (inputDevices, outputDevices);
+#endif
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"使用 MIDI 2.0 API 获取设备失败，回退到 MIDI 1.0: {ex.Message}");
+                currentApiType = MidiApiType.Midi10;
+            }
+
+            // 默认使用 MIDI 1.0
+            var midi10InputDevices = Midi10Manager.GetInputDevices();
+            var midi10OutputDevices = Midi10Manager.GetOutputDevices();
+            return (midi10InputDevices, midi10OutputDevices);
+        }
+
+        /// <summary>
         /// 自动刷新 - 静默检测变更，有变更时触发事件通知UI主动获取
         /// </summary>
         private void PerformAutoRefresh()
@@ -126,8 +166,7 @@ namespace MidiForwarder
             var previousOutputDevices = GetCachedDevices().outputDevices;
 
             // 获取最新设备列表
-            var newInputDevices = MidiManager.GetInputDevices();
-            var newOutputDevices = MidiManager.GetOutputDevices();
+            var (newInputDevices, newOutputDevices) = GetDevicesFromCurrentApi();
 
             // 检测是否有变更
             bool inputChanged = !AreDeviceListsEqual(previousInputDevices, newInputDevices);
@@ -172,7 +211,7 @@ namespace MidiForwarder
         /// <summary>
         /// 根据设备名称查找设备ID
         /// </summary>
-        public int? FindInputDeviceIdByName(string deviceName)
+        public string? FindInputDeviceIdByName(string deviceName)
         {
             lock (cacheLock)
             {
@@ -184,7 +223,7 @@ namespace MidiForwarder
         /// <summary>
         /// 根据设备名称查找设备ID
         /// </summary>
-        public int? FindOutputDeviceIdByName(string deviceName)
+        public string? FindOutputDeviceIdByName(string deviceName)
         {
             lock (cacheLock)
             {
@@ -196,7 +235,7 @@ namespace MidiForwarder
         /// <summary>
         /// 根据设备ID查找设备名称
         /// </summary>
-        public string? FindInputDeviceNameById(int deviceId)
+        public string? FindInputDeviceNameById(string deviceId)
         {
             lock (cacheLock)
             {
@@ -208,7 +247,7 @@ namespace MidiForwarder
         /// <summary>
         /// 根据设备ID查找设备名称
         /// </summary>
-        public string? FindOutputDeviceNameById(int deviceId)
+        public string? FindOutputDeviceNameById(string deviceId)
         {
             lock (cacheLock)
             {

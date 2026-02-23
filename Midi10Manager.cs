@@ -2,34 +2,17 @@ using NAudio.Midi;
 
 namespace MidiForwarder
 {
-    public class MidiDeviceInfo
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = "";
-        public bool IsBluetooth { get; set; }
-    }
-
-    public class MidiMessageEventArgs : EventArgs
-    {
-        public int RawMessage { get; set; }
-        public string MessageType { get; set; } = "";
-        public int Channel { get; set; }
-        public int Data1 { get; set; }
-        public int Data2 { get; set; }
-        public DateTime Timestamp { get; set; }
-    }
-
-    public class MidiManager(ConfigManager? configManager = null) : IDisposable
+    public class Midi10Manager : IMidiManager
     {
         private MidiIn? midiInputDevice;
         private MidiOut? midiOutputDevice;
         private int selectedInputDeviceId = -1;
         private int selectedOutputDeviceId = -1;
-        private readonly ConfigManager? configManager = configManager;
+        private readonly ConfigManager? configManager;
 
         public bool IsConnected => midiInputDevice != null && midiOutputDevice != null;
-        public int SelectedInputDeviceId => selectedInputDeviceId;
-        public int SelectedOutputDeviceId => selectedOutputDeviceId;
+        public string SelectedInputDeviceId => selectedInputDeviceId.ToString();
+        public string SelectedOutputDeviceId => selectedOutputDeviceId.ToString();
 
         public event EventHandler<MidiMessageEventArgs>? MessageReceived;
         public event EventHandler<string>? ErrorOccurred;
@@ -42,6 +25,12 @@ namespace MidiForwarder
             "bluetooth", "无线", "wireless",
             "蓝牙", "btooth", "btmidi", "midi bt"
         ];
+
+        public Midi10Manager(ConfigManager? configManager = null)
+        {
+            this.configManager = configManager;
+            Logger.Info("Midi10Manager 已创建 (MIDI 1.0 API)");
+        }
 
         /// <summary>
         /// 检查设备是否为蓝牙设备
@@ -65,15 +54,12 @@ namespace MidiForwarder
             }
 
             // 检查 "ble" 模式 - 需要是独立的词或带有连字符
-            // 例如: "BLE MIDI", "BLE-MIDI", "MIDI BLE", "MIDI-BLE" 是蓝牙
-            // 但 "Wavetable", "Cable" 中的 "ble" 不是
             if (IsBluetoothBlePattern(deviceName))
             {
                 return true;
             }
 
             // 检查 "bt" 模式 - 需要是独立的词或带有连字符
-            // 例如: "BT MIDI", "BT-MIDI", "MIDI BT", "MIDI-BT" 是蓝牙
             if (IsBluetoothBtPattern(deviceName))
             {
                 return true;
@@ -87,13 +73,9 @@ namespace MidiForwarder
         /// </summary>
         private static bool IsBluetoothBlePattern(string deviceName)
         {
-            // 查找 "ble" 的位置（不区分大小写）
             int index = deviceName.IndexOf("ble", StringComparison.OrdinalIgnoreCase);
             while (index != -1)
             {
-                // 检查 "ble" 前后是否有蓝牙特征
-                // 前导字符：空格、连字符、字符串开始
-                // 后随字符：空格、连字符、字符串结束、数字
                 bool validPrefix = index == 0 ||
                     deviceName[index - 1] == ' ' ||
                     deviceName[index - 1] == '-';
@@ -103,13 +85,11 @@ namespace MidiForwarder
                     deviceName[index + 3] == '-' ||
                     char.IsDigit(deviceName[index + 3]);
 
-                // 如果前后都是有效的分隔符，则是蓝牙BLE
                 if (validPrefix && validSuffix)
                 {
                     return true;
                 }
 
-                // 继续查找下一个 "ble"
                 index = deviceName.IndexOf("ble", index + 1, StringComparison.OrdinalIgnoreCase);
             }
 
@@ -121,7 +101,6 @@ namespace MidiForwarder
         /// </summary>
         private static bool IsBluetoothBtPattern(string deviceName)
         {
-            // 查找 " bt" 或 "bt " 或 "-bt" 或 "bt-" 模式（不区分大小写）
             string[] btPatterns = [" bt ", " bt-", "-bt ", "-bt-", " bt", "bt "];
             foreach (var pattern in btPatterns)
             {
@@ -131,7 +110,6 @@ namespace MidiForwarder
                 }
             }
 
-            // 检查字符串开头或结尾的 "bt"（不区分大小写）
             if (deviceName.StartsWith("bt ", StringComparison.OrdinalIgnoreCase) ||
                 deviceName.StartsWith("bt-", StringComparison.OrdinalIgnoreCase) ||
                 deviceName.EndsWith(" bt", StringComparison.OrdinalIgnoreCase) ||
@@ -164,7 +142,7 @@ namespace MidiForwarder
                 var name = $"[{i}] {deviceInfo.ProductName}";
                 devices.Add(new MidiDeviceInfo
                 {
-                    Id = i,
+                    Id = i.ToString(),
                     Name = name,
                     IsBluetooth = IsBluetoothDevice(deviceInfo.ProductName, exclusions)
                 });
@@ -193,7 +171,7 @@ namespace MidiForwarder
                 var name = $"[{i}] {deviceInfo.ProductName}";
                 devices.Add(new MidiDeviceInfo
                 {
-                    Id = i,
+                    Id = i.ToString(),
                     Name = name,
                     IsBluetooth = IsBluetoothDevice(deviceInfo.ProductName, exclusions)
                 });
@@ -201,19 +179,24 @@ namespace MidiForwarder
             return devices;
         }
 
-        public bool Connect(int inputDeviceId, int outputDeviceId)
+        public bool Connect(string inputDeviceId, string outputDeviceId)
         {
-            Logger.Info($"MidiManager.Connect: 开始连接设备 - 输入ID={inputDeviceId}, 输出ID={outputDeviceId}");
+            if (!int.TryParse(inputDeviceId, out int inputId) || !int.TryParse(outputDeviceId, out int outputId))
+            {
+                Logger.Error("无效的设备ID格式");
+                return false;
+            }
+
+            Logger.Info($"Midi10Manager.Connect: 开始连接设备 - 输入ID={inputId}, 输出ID={outputId}");
 
             try
             {
-                Logger.Info("MidiManager.Connect: 断开现有连接");
+                Logger.Info("Midi10Manager.Connect: 断开现有连接");
                 Disconnect();
 
-                selectedInputDeviceId = inputDeviceId;
-                selectedOutputDeviceId = outputDeviceId;
+                selectedInputDeviceId = inputId;
+                selectedOutputDeviceId = outputId;
 
-                // 获取设备名称用于日志
                 string inputDeviceName = "Unknown";
                 string outputDeviceName = "Unknown";
                 bool isInputBluetooth = false;
@@ -223,31 +206,31 @@ namespace MidiForwarder
 
                 try
                 {
-                    if (inputDeviceId >= 0 && inputDeviceId < MidiIn.NumberOfDevices)
+                    if (inputId >= 0 && inputId < MidiIn.NumberOfDevices)
                     {
-                        inputDeviceName = MidiIn.DeviceInfo(inputDeviceId).ProductName;
+                        inputDeviceName = MidiIn.DeviceInfo(inputId).ProductName;
                         isInputBluetooth = IsBluetoothDevice(inputDeviceName, exclusions);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Info($"MidiManager.Connect: 获取输入设备名称失败 - {ex.Message}");
+                    Logger.Info($"Midi10Manager.Connect: 获取输入设备名称失败 - {ex.Message}");
                 }
 
                 try
                 {
-                    if (outputDeviceId >= 0 && outputDeviceId < MidiOut.NumberOfDevices)
+                    if (outputId >= 0 && outputId < MidiOut.NumberOfDevices)
                     {
-                        outputDeviceName = MidiOut.DeviceInfo(outputDeviceId).ProductName;
+                        outputDeviceName = MidiOut.DeviceInfo(outputId).ProductName;
                         isOutputBluetooth = IsBluetoothDevice(outputDeviceName, exclusions);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Info($"MidiManager.Connect: 获取输出设备名称失败 - {ex.Message}");
+                    Logger.Info($"Midi10Manager.Connect: 获取输出设备名称失败 - {ex.Message}");
                 }
 
-                Logger.Info($"MidiManager.Connect: 输入设备='{inputDeviceName}', 输出设备='{outputDeviceName}'");
+                Logger.Info($"Midi10Manager.Connect: 输入设备='{inputDeviceName}', 输出设备='{outputDeviceName}'");
 
                 // 蓝牙设备警告提示
                 if (isInputBluetooth || isOutputBluetooth)
@@ -264,23 +247,23 @@ namespace MidiForwarder
                         AppLog.Info(string.Format(LocalizationManager.GetString("LogDetectedBluetoothOutput"), outputDeviceName));
                 }
 
-                Logger.Info("MidiManager.Connect: 创建MidiIn实例");
+                Logger.Info("Midi10Manager.Connect: 创建MidiIn实例");
                 midiInputDevice = new MidiIn(selectedInputDeviceId);
                 midiInputDevice.MessageReceived += OnMidiMessageReceived;
 
-                Logger.Info("MidiManager.Connect: 启动MidiIn");
+                Logger.Info("Midi10Manager.Connect: 启动MidiIn");
                 midiInputDevice.Start();
 
-                Logger.Info("MidiManager.Connect: 创建MidiOut实例");
+                Logger.Info("Midi10Manager.Connect: 创建MidiOut实例");
                 midiOutputDevice = new MidiOut(selectedOutputDeviceId);
 
-                Logger.Info("MidiManager.Connect: 连接成功");
+                Logger.Info("Midi10Manager.Connect: 连接成功");
                 Connected?.Invoke(this, EventArgs.Empty);
                 return true;
             }
             catch (Exception ex)
             {
-                Logger.Error($"MidiManager.Connect: 连接失败 - {ex.Message}", ex);
+                Logger.Error($"Midi10Manager.Connect: 连接失败 - {ex.Message}", ex);
                 ErrorOccurred?.Invoke(this, $"连接错误: {ex.Message}");
                 Disconnect();
                 return false;
@@ -289,14 +272,14 @@ namespace MidiForwarder
 
         public void Disconnect()
         {
-            Logger.Info($"MidiManager.Disconnect: 开始断开连接 - 当前连接状态={IsConnected}");
+            Logger.Info($"Midi10Manager.Disconnect: 开始断开连接 - 当前连接状态={IsConnected}");
             try
             {
                 bool wasConnected = IsConnected;
 
                 if (midiInputDevice != null)
                 {
-                    Logger.Info("MidiManager.Disconnect: 停止MidiIn");
+                    Logger.Info("Midi10Manager.Disconnect: 停止MidiIn");
                     try
                     {
                         midiInputDevice.Stop();
@@ -305,32 +288,32 @@ namespace MidiForwarder
                     midiInputDevice.MessageReceived -= OnMidiMessageReceived;
                     midiInputDevice.Dispose();
                     midiInputDevice = null;
-                    Logger.Info("MidiManager.Disconnect: MidiIn已释放");
+                    Logger.Info("Midi10Manager.Disconnect: MidiIn已释放");
                 }
 
                 if (midiOutputDevice != null)
                 {
-                    Logger.Info("MidiManager.Disconnect: 释放MidiOut");
+                    Logger.Info("Midi10Manager.Disconnect: 释放MidiOut");
                     try
                     {
                         midiOutputDevice.Dispose();
                     }
                     catch { }
                     midiOutputDevice = null;
-                    Logger.Info("MidiManager.Disconnect: MidiOut已释放");
+                    Logger.Info("Midi10Manager.Disconnect: MidiOut已释放");
                 }
 
                 if (wasConnected)
                 {
-                    Logger.Info("MidiManager.Disconnect: 触发Disconnected事件");
+                    Logger.Info("Midi10Manager.Disconnect: 触发Disconnected事件");
                     Disconnected?.Invoke(this, EventArgs.Empty);
                 }
 
-                Logger.Info("MidiManager.Disconnect: 断开连接完成");
+                Logger.Info("Midi10Manager.Disconnect: 断开连接完成");
             }
             catch (Exception ex)
             {
-                Logger.Error($"MidiManager.Disconnect: 断开连接错误 - {ex.Message}", ex);
+                Logger.Error($"Midi10Manager.Disconnect: 断开连接错误 - {ex.Message}", ex);
                 ErrorOccurred?.Invoke(this, $"断开连接错误: {ex.Message}");
             }
         }

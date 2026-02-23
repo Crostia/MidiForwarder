@@ -14,9 +14,6 @@ namespace MidiForwarder
         public DateTime LastUpdateCheck { get; set; } = DateTime.MinValue; // 上次检查更新时间
         public string? IgnoredVersion { get; set; } = null; // 被忽略的版本号
 
-        // 开机启动延迟（分钟），默认2分钟
-        public int AutoBootDelayMinutes { get; set; } = 2;
-
         // 自动连接重试间隔（秒），默认30秒
         public int AutoConnectRetryIntervalSeconds { get; set; } = 30;
 

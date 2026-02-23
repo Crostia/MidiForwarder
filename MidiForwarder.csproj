@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -23,10 +23,48 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <!-- Windows MIDI Services SDK 支持 -->
+    <WindowsSdkPackageVersion>10.0.22621.38</WindowsSdkPackageVersion>
+    <!-- 只有在 SDK 存在时才定义 WINDOWS_MIDI_SERVICES 常量 -->
+    <DefineConstants Condition="Exists('$(ProgramFiles)\Windows MIDI Services\SDK\Microsoft.Windows.Devices.Midi2.winmd')">$(DefineConstants);WINDOWS_MIDI_SERVICES</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
+    <!-- Windows MIDI Services SDK - 条件引用，如果本地存在则使用 -->
+    <PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.0.8" />
+  </ItemGroup>
+
+  <!-- 引用 Windows MIDI Services SDK (如果本地已安装) -->
+  <ItemGroup Condition="Exists('$(ProgramFiles)\Windows MIDI Services\SDK\Microsoft.Windows.Devices.Midi2.winmd')">
+    <Reference Include="Microsoft.Windows.Devices.Midi2">
+      <HintPath>$(ProgramFiles)\Windows MIDI Services\SDK\Microsoft.Windows.Devices.Midi2.winmd</HintPath>
+      <IsWinMDFile>true</IsWinMDFile>
+    </Reference>
+    <Reference Include="Microsoft.Windows.Devices.Midi2.Common">
+      <HintPath>$(ProgramFiles)\Windows MIDI Services\SDK\Microsoft.Windows.Devices.Midi2.Common.winmd</HintPath>
+      <IsWinMDFile>true</IsWinMDFile>
+    </Reference>
+    <Reference Include="Microsoft.Windows.Devices.Midi2.Diagnostics">
+      <HintPath>$(ProgramFiles)\Windows MIDI Services\SDK\Microsoft.Windows.Devices.Midi2.Diagnostics.winmd</HintPath>
+      <IsWinMDFile>true</IsWinMDFile>
+    </Reference>
+    <Reference Include="Microsoft.Windows.Devices.Midi2.Endpoints.Loopback">
+      <HintPath>$(ProgramFiles)\Windows MIDI Services\SDK\Microsoft.Windows.Devices.Midi2.Endpoints.Loopback.winmd</HintPath>
+      <IsWinMDFile>true</IsWinMDFile>
+    </Reference>
+    <Reference Include="Microsoft.Windows.Devices.Midi2.Endpoints.Virtual">
+      <HintPath>$(ProgramFiles)\Windows MIDI Services\SDK\Microsoft.Windows.Devices.Midi2.Endpoints.Virtual.winmd</HintPath>
+      <IsWinMDFile>true</IsWinMDFile>
+    </Reference>
+    <Reference Include="Microsoft.Windows.Devices.Midi2.Messages">
+      <HintPath>$(ProgramFiles)\Windows MIDI Services\SDK\Microsoft.Windows.Devices.Midi2.Messages.winmd</HintPath>
+      <IsWinMDFile>true</IsWinMDFile>
+    </Reference>
+    <Reference Include="Microsoft.Windows.Devices.Midi2.Utilities.SysEx">
+      <HintPath>$(ProgramFiles)\Windows MIDI Services\SDK\Microsoft.Windows.Devices.Midi2.Utilities.SysEx.winmd</HintPath>
+      <IsWinMDFile>true</IsWinMDFile>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
